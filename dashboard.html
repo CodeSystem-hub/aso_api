@@ -228,6 +228,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
+  const isAuthenticated = () => {
+    const method = sessionStorage.getItem('apiAuthMethod') || '';
+    const user = sessionStorage.getItem('apiUser') || '';
+    const pass = sessionStorage.getItem('apiPass') || '';
+    const bearer = sessionStorage.getItem('apiBearerToken') || '';
+    if (method === 'basic') return Boolean(user && pass);
+    if (method === 'bearer') return Boolean(bearer);
+    return false;
+  };
+
+  if (!isAuthenticated()) {
+    window.location.replace('login.html');
+  }
+
   let dados = [];
   let rawContext = null;
   let importMode = 'capa';
