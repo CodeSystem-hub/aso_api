@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Sistema ASO</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard">
+
+<div class="dashboard-layout">
+  <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-title">ERP ASO</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-module" data-module="aso">
+        <button class="nav-module__header" type="button" onclick="toggleModule('aso')" aria-expanded="true">
+          <span>ASO</span>
+          <span class="nav-module__chevron" aria-hidden="true"></span>
+        </button>
+        <div class="nav-module__items">
+          <button class="nav-item active" type="button" data-page="asoImport" onclick="showPage('asoImport')">Importação</button>
+          <button class="nav-item" type="button" data-page="asoHistorico" onclick="showPage('asoHistorico')">Histórico</button>
+        </div>
+      </div>
+
+      <div class="nav-module collapsed" data-module="vacinas">
+        <button class="nav-module__header" type="button" onclick="toggleModule('vacinas')" aria-expanded="false">
+          <span>Vacinas</span>
+          <span class="nav-module__chevron" aria-hidden="true"></span>
+        </button>
+        <div class="nav-module__items">
+          <button class="nav-item" type="button" data-page="vacina" onclick="showPage('vacina')">Painel</button>
+        </div>
+      </div>
+
+      <div class="nav-divider"></div>
+      <button class="nav-item nav-item--danger" type="button" onclick="logout()">Sair</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar__left">
+        <button class="icon-button" type="button" onclick="openSidebar()" aria-label="Abrir menu">
+          <span aria-hidden="true">≡</span>
+        </button>
+        <div class="topbar__title" id="pageTitle">Importação de ASO</div>
+      </div>
+
+      <div class="topbar__actions">
+        <button class="button" type="button" onclick="consultarComparar()">Consultar/Comparar</button>
+        <button id="integrarBtn" class="button button--primary" type="button" onclick="integrar()">Integrar</button>
+      </div>
+    </div>
+
+    <div id="apiProgressWrap" class="card hidden" style="padding:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="font-weight:800; font-size:13px;">Consulta/Comparação com API</div>
+        <div id="apiProgressText" class="meta"></div>
+      </div>
+      <div style="height:10px; background:#eef2f7; border-radius:999px; overflow:hidden; margin-top:10px;">
+        <div id="apiProgressBar" style="height:10px; width:0%; background:#2563eb; transition: width 160ms ease;"></div>
+      </div>
+    </div>
+
+    <section id="asoImportPage" class="page">
+      <div class="card">
+        <div class="card__header">
+          <div>
+            <h2>Importação de ASO</h2>
+            <div class="muted">Carregue um CSV ou XLSX, revise e integre.</div>
+          </div>
+
+          <label class="file-button">
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="loadFile()">
+            Selecionar arquivo
+          </label>
+        </div>
+
+        <div class="import-controls">
+          <div class="segmented" role="tablist" aria-label="Tipo de importação">
+            <button id="modeCoverBtn" class="segmented__btn active" type="button" onclick="setImportMode('capa')">Capa do ASO</button>
+            <button id="modeExamsBtn" class="segmented__btn" type="button" onclick="setImportMode('exames')">Exames</button>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="button" type="button" onclick="toggleMappingPanel()">Mapeamento</button>
+            <button class="button" type="button" onclick="clearAllFilters()">Limpar filtros</button>
+          </div>
+        </div>
+
+        <div id="mappingPanel" class="mapping hidden">
+          <div class="mapping__title">Mapeamento de colunas (personalizado)</div>
+          <div id="mappingGrid" class="mapping__grid"></div>
+          <div class="mapping__actions">
+            <button class="button" type="button" onclick="resetMapping()">Padrão</button>
+            <button class="button button--primary" type="button" onclick="applyMapping()">Aplicar</button>
+          </div>
+
+          <div class="mapping__field" style="max-width:520px;">
+            <div class="mapping__label">API (GET para consulta pré-integração)</div>
+            <input id="apiBaseUrlInput" class="input" placeholder="https://sua-api/colaboradores?cpf=" onblur="saveApiBaseUrl()">
+          </div>
+
+          <div class="mapping__field" style="max-width:520px;">
+            <div class="mapping__label">Proxy local (se der CORS)</div>
+            <input id="apiProxyBaseUrlInput" class="input" placeholder="http://localhost:8787/proxy?target=" onblur="saveApiProxyBaseUrl()">
+          </div>
+
+          <div class="mapping__actions" style="justify-content:flex-start; padding: 0 4px;">
+            <button class="button" type="button" onclick="testarApi()">Testar API</button>
+            <div id="apiTestStatus" class="meta"></div>
+          </div>
+
+          <div class="mapping__grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+            <div class="mapping__field">
+              <div class="mapping__label">Autenticação</div>
+              <select id="apiAuthMethodSelect" class="select" onchange="onAuthMethodChange()">
+                <option value="none">Sem auth</option>
+                <option value="basic">Basic (usuário/senha)</option>
+                <option value="bearer">Bearer (token)</option>
+              </select>
+            </div>
+
+            <div class="mapping__field" id="apiBearerField">
+              <div class="mapping__label">Token (Bearer)</div>
+              <input id="apiBearerTokenInput" class="input" placeholder="cole o token aqui" onblur="saveApiAuth()">
+            </div>
+
+            <div class="mapping__field" id="apiUserField">
+              <div class="mapping__label">Usuário</div>
+              <input id="apiUserInput" class="input" placeholder="usuário" onblur="saveApiAuth()">
+            </div>
+
+            <div class="mapping__field" id="apiPassField">
+              <div class="mapping__label">Senha</div>
+              <input id="apiPassInput" class="input" type="password" placeholder="senha" onblur="saveApiAuth()">
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" id="filtro" class="input" placeholder="Buscar (texto livre)" onkeyup="onGlobalSearchChange()">
+          <div id="rowCount" class="meta"></div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="tabela" class="table">
+            <thead id="tableHead"></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="asoHistoricoPage" class="page hidden">
+      <div class="card">
+        <h2>Histórico de ASO</h2>
+        <div class="muted">Em construção.</div>
+      </div>
+    </section>
+
+    <section id="vacinaPage" class="page hidden">
+      <div class="card">
+        <h2>Módulo Vacinas</h2>
+        <div class="muted">Em construção.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  let dados = [];
+  let rawContext = null;
+  let importMode = 'capa';
+  const asoCoverCode = '10101012';
+  let allRows = [];
+  let detailRows = [];
+  let coverRows = [];
+  let columnFilters = {};
+  let globalSearch = '';
+  let activePopover = null;
+  let activePopoverKey = null;
+  let coverIntegrated = localStorage.getItem('coverIntegrated') === '1';
+  const defaultApiBaseUrl = 'https://institutode139487.rm.cloudtotvs.com.br:2051/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0006/0/V/?parameters=CODCOLIGADA=0;TIPO=funcionario;CPF={cpf}';
+  let apiBaseUrl = localStorage.getItem('apiBaseUrl') || defaultApiBaseUrl;
+  let apiProxyBaseUrl = localStorage.getItem('apiProxyBaseUrl') || 'http://localhost:8787/proxy?target=';
+  let apiAuthMethod = sessionStorage.getItem('apiAuthMethod') || 'none';
+  let apiUser = sessionStorage.getItem('apiUser') || '';
+  let apiPass = sessionStorage.getItem('apiPass') || '';
+  let apiBearerToken = sessionStorage.getItem('apiBearerToken') || '';
+  let employeeCache = {};
+  let employeeCacheErrors = {};
+  let consultStatus = { running: false, done: 0, total: 0 };
+  let apiDebug = { lastCpf: '', lastUrl: '', usedProxy: false, status: '', message: '' };
+  let currentPage = 'asoImport';
+  const pageConfig = {
+    asoImport: { title: 'Importação de ASO', canIntegrate: true },
+    asoHistorico: { title: 'Histórico de ASO', canIntegrate: false },
+    vacina: { title: 'Vacinas', canIntegrate: false }
+  };
+
+  function showPage(page) {
+    currentPage = page;
+
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    const pageEl = document.getElementById(page + 'Page');
+    if (pageEl) pageEl.classList.remove('hidden');
+
+    document.querySelectorAll('.nav-item[data-page]').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.querySelector(`.nav-item[data-page="${page}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    const cfg = pageConfig[page] || { title: page, canIntegrate: false };
+    document.getElementById('pageTitle').innerText = cfg.title;
+    const integrarBtn = document.getElementById('integrarBtn');
+    integrarBtn.disabled = !cfg.canIntegrate;
+
+    closeSidebar();
+  }
+
+  function logout() {
+    sessionStorage.removeItem('apiAuthMethod');
+    sessionStorage.removeItem('apiUser');
+    sessionStorage.removeItem('apiPass');
+    sessionStorage.removeItem('apiBearerToken');
+    window.location.href = 'login.html';
+  }
+
+  function toggleModule(moduleKey) {
+    const moduleEl = document.querySelector(`.nav-module[data-module="${moduleKey}"]`);
+    if (!moduleEl) return;
+
+    moduleEl.classList.toggle('collapsed');
+    const header = moduleEl.querySelector('.nav-module__header');
+    if (header) header.setAttribute('aria-expanded', String(!moduleEl.classList.contains('collapsed')));
+
+    const state = getModuleState();
+    state[moduleKey] = !moduleEl.classList.contains('collapsed');
+    localStorage.setItem('navModules', JSON.stringify(state));
+  }
+
+  function getModuleState() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('navModules') || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function applyModuleState() {
+    const state = getModuleState();
+    document.querySelectorAll('.nav-module[data-module]').forEach(moduleEl => {
+      const key = moduleEl.getAttribute('data-module');
+      const isOpen = state[key];
+      if (isOpen === true) moduleEl.classList.remove('collapsed');
+      if (isOpen === false) moduleEl.classList.add('collapsed');
+      const header = moduleEl.querySelector('.nav-module__header');
+      if (header) header.setAttribute('aria-expanded', String(!moduleEl.classList.contains('collapsed')));
+    });
+  }
+
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('sidebar--open');
+    document.getElementById('overlay').classList.add('overlay--open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('sidebar--open');
+    document.getElementById('overlay').classList.remove('overlay--open');
+  }
+
+  function normalizeCell(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/\r/g, '').trim();
+  }
+
+  function normalizeHeaderKey(value) {
+    return normalizeCell(value)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function getFileExtension(fileName) {
+    const name = String(fileName || '');
+    const idx = name.lastIndexOf('.');
+    return idx >= 0 ? name.slice(idx + 1).toLowerCase() : '';
+  }
+
+  const mappingFields = [
+    { key: 'nomeFuncionario', label: 'Nome Funcionário', patterns: [/^nome\s+func/, /nome.*func/] },
+    { key: 'cpf', label: 'CPF', patterns: [/^cpf$/, /cpf/] },
+    { key: 'matricula', label: 'Matrícula', patterns: [/matr/, /matricula/] },
+    { key: 'tipoExame', label: 'Tipo de exame', patterns: [/tipo.*exame/] },
+    { key: 'refSeq', label: 'Ref./Seq.', patterns: [/ref/, /seq/, /sequencial/] },
+    { key: 'nomeExame', label: 'Nome do Exame', patterns: [/nome.*do.*exame/, /^nome.*exame$/] },
+    { key: 'codigoExame', label: 'Código do Exame', patterns: [/codigo.*exame/, /^codigo$/] },
+    { key: 'dataFicha', label: 'Data da Ficha', patterns: [/data.*ficha/] },
+    { key: 'dataResExame', label: 'Data Res. Exame', patterns: [/data.*res/] },
+    { key: 'nomeExaminador', label: 'Nome Examinador', patterns: [/nome.*examinador/] },
+    { key: 'parecerAso', label: 'Parecer (ASO)', patterns: [/parecer/, /aso/] },
+    { key: 'empresa', label: 'Empresa', patterns: [/nome.*empresa/, /^empresa$/] },
+    { key: 'unidade', label: 'Unidade', patterns: [/unidade/] },
+    { key: 'setor', label: 'Setor', patterns: [/setor/] },
+    { key: 'cargo', label: 'Cargo', patterns: [/cargo/] }
+  ];
+
+  const columnsByMode = {
+    capa: [
+      { key: 'nomeFuncionario', label: 'Nome Funcionário' },
+      { key: 'cpf', label: 'CPF' },
+      { key: 'matricula', label: 'Matrícula' },
+      { key: 'situacao', label: 'Situação' },
+      { key: 'matriculaApi', label: 'Matrícula (API)' },
+      { key: 'dataFicha', label: 'Data da Ficha' },
+      { key: 'nomeExaminador', label: 'Nome Examinador' },
+      { key: 'parecerAso', label: 'Parecer (ASO)' },
+      { key: 'qtdeExames', label: 'Qtde Exames' },
+      { key: 'comparativo', label: 'Comparativo' }
+    ],
+    exames: [
+      { key: 'nomeFuncionario', label: 'Nome Funcionário' },
+      { key: 'tipoExame', label: 'Tipo de exame' },
+      { key: 'refSeq', label: 'Ref./Seq.' },
+      { key: 'nomeExame', label: 'Nome do Exame' },
+      { key: 'codigoExame', label: 'Código do Exame' },
+      { key: 'dataFicha', label: 'Data da Ficha' },
+      { key: 'dataResExame', label: 'Data Res. Exame' },
+      { key: 'nomeExaminador', label: 'Nome Examinador' },
+      { key: 'situacao', label: 'Situação' },
+      { key: 'matriculaApi', label: 'Matrícula (API)' },
+      { key: 'comparativo', label: 'Comparativo' }
+    ]
+  };
+
+  function findIndexByPatterns(headerKeys, patterns) {
+    for (let i = 0; i < headerKeys.length; i++) {
+      const key = headerKeys[i];
+      for (const pattern of patterns) {
+        if (pattern.test(key)) return i;
+      }
+    }
+    return -1;
+  }
+
+  function guessMapping(headerKeys) {
+    const mapping = {};
+    mappingFields.forEach(field => {
+      mapping[field.key] = findIndexByPatterns(headerKeys, field.patterns);
+    });
+
+    if (mapping.nomeFuncionario !== -1) {
+      const key = headerKeys[mapping.nomeFuncionario] || '';
+      if (/\bmatricula\b/.test(key) || /\bmatr\b/.test(key)) {
+        mapping.nomeFuncionario = -1;
+      }
+    }
+
+    if (mapping.nomeFuncionario === -1) {
+      const best = headerKeys.findIndex(k => /\bnome\b/.test(k) && /\bfunc/.test(k));
+      if (best !== -1) mapping.nomeFuncionario = best;
+    }
+
+    if (mapping.nomeFuncionario === -1) {
+      const fallback = headerKeys.findIndex(k => /\bfuncionario\b/.test(k) && !/\bmatricula\b/.test(k) && !/\bmatr\b/.test(k));
+      if (fallback !== -1) mapping.nomeFuncionario = fallback;
+    }
+
+    if (mapping.nomeExame !== -1 && mapping.nomeExame === mapping.nomeExaminador) {
+      mapping.nomeExame = findIndexByPatterns(headerKeys, [/nome.*do.*exame/, /^nome.*exame$/]);
+    }
+
+    return mapping;
+  }
+
+  function excelSerialToDateString(serial) {
+    if (typeof serial !== 'number' || !Number.isFinite(serial)) return '';
+    const ms = Date.UTC(1899, 11, 30) + Math.round(serial * 86400000);
+    const d = new Date(ms);
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  function formatDateCell(value) {
+    if (value === null || value === undefined || value === '') return '';
+    if (typeof value === 'number') return excelSerialToDateString(value);
+    const s = normalizeCell(value);
+    if (/^\d{4,6}$/.test(s)) return excelSerialToDateString(Number(s));
+    return s;
+  }
+
+  function parseCsvTextToContext(text) {
+    const rawLines = String(text || '').split(/\r?\n/);
+    const lines = rawLines.map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return null;
+
+    const sample = lines.slice(0, 10).join('\n');
+    const commaCount = (sample.match(/,/g) || []).length;
+    const semiCount = (sample.match(/;/g) || []).length;
+    const delimiter = semiCount > commaCount ? ';' : ',';
+
+    const firstRowCells = lines[0].split(delimiter).map(normalizeCell);
+    const headerKeys = firstRowCells.map(normalizeHeaderKey);
+    const mappingGuess = guessMapping(headerKeys);
+    const headerLooksLikeHeader = Object.values(mappingGuess).some(v => v >= 0);
+
+    const headersOriginal = headerLooksLikeHeader ? firstRowCells : firstRowCells.map((_, i) => `Coluna ${i + 1}`);
+    const headerKeysFinal = headersOriginal.map(normalizeHeaderKey);
+    const startRow = headerLooksLikeHeader ? 1 : 0;
+
+    const rawRows = [];
+    for (let i = startRow; i < lines.length; i++) {
+      const row = lines[i].split(delimiter).map(normalizeCell);
+      rawRows.push(row);
+    }
+
+    return {
+      fileType: 'csv',
+      headersOriginal,
+      headerKeys: headerKeysFinal,
+      rawRows,
+      mapping: guessMapping(headerKeysFinal),
+      defaultMapping: guessMapping(headerKeysFinal)
+    };
+  }
+
+  function parseXlsxArrayBufferToContext(arrayBuffer) {
+    if (typeof XLSX === 'undefined' || !XLSX?.read) {
+      throw new Error('Biblioteca XLSX não carregada');
+    }
+
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheetName = workbook.SheetNames?.[0];
+    if (!firstSheetName) return null;
+
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '', raw: true });
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+
+    const firstRow = rows[0] || [];
+    const firstRowCells = firstRow.map(normalizeCell);
+    const headerKeys = firstRowCells.map(normalizeHeaderKey);
+    const mappingGuess = guessMapping(headerKeys);
+    const headerLooksLikeHeader = Object.values(mappingGuess).some(v => v >= 0);
+
+    const headersOriginal = headerLooksLikeHeader ? firstRowCells : firstRowCells.map((_, i) => `Coluna ${i + 1}`);
+    const headerKeysFinal = headersOriginal.map(normalizeHeaderKey);
+    const startRow = headerLooksLikeHeader ? 1 : 0;
+
+    const rawRows = [];
+    for (let i = startRow; i < rows.length; i++) {
+      rawRows.push(rows[i] || []);
+    }
+
+    return {
+      fileType: 'xlsx',
+      sheetName: firstSheetName,
+      headersOriginal,
+      headerKeys: headerKeysFinal,
+      rawRows,
+      mapping: guessMapping(headerKeysFinal),
+      defaultMapping: guessMapping(headerKeysFinal)
+    };
+  }
+
+  function getMappedValue(row, idx) {
+    if (idx === null || idx === undefined || idx < 0) return '';
+    return idx < row.length ? row[idx] : '';
+  }
+
+  function mapRow(row, mapping) {
+    const obj = {};
+    obj.nomeFuncionario = normalizeCell(getMappedValue(row, mapping.nomeFuncionario));
+    obj.cpf = normalizeCell(getMappedValue(row, mapping.cpf));
+    obj.matricula = normalizeCell(getMappedValue(row, mapping.matricula));
+    obj.tipoExame = normalizeCell(getMappedValue(row, mapping.tipoExame));
+    obj.refSeq = normalizeCell(getMappedValue(row, mapping.refSeq));
+    obj.nomeExame = normalizeCell(getMappedValue(row, mapping.nomeExame));
+    obj.codigoExame = normalizeCell(getMappedValue(row, mapping.codigoExame));
+    obj.dataFicha = formatDateCell(getMappedValue(row, mapping.dataFicha));
+    obj.dataResExame = formatDateCell(getMappedValue(row, mapping.dataResExame));
+    obj.nomeExaminador = normalizeCell(getMappedValue(row, mapping.nomeExaminador));
+    obj.parecerAso = normalizeCell(getMappedValue(row, mapping.parecerAso));
+    obj.empresa = normalizeCell(getMappedValue(row, mapping.empresa));
+    obj.unidade = normalizeCell(getMappedValue(row, mapping.unidade));
+    obj.setor = normalizeCell(getMappedValue(row, mapping.setor));
+    obj.cargo = normalizeCell(getMappedValue(row, mapping.cargo));
+    obj.situacao = '';
+    obj.matriculaApi = '';
+    obj.comparativo = '';
+    obj.blocked = false;
+    applyEmployeeInfoToMappedRow(obj);
+    return obj;
+  }
+
+  function cpfDigits(value) {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  function formatCpf(value) {
+    const d = cpfDigits(value);
+    if (d.length !== 11) return '';
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  }
+
+  function normalizeSituacao(value) {
+    const v = normalizeCell(value).toUpperCase();
+    if (!v) return '';
+    if (v === 'D') return 'D';
+    return v;
+  }
+
+  function normalizeTipoExame(value) {
+    return normalizeHeaderKey(value);
+  }
+
+  function buildApiUrl(cpf) {
+    const base = String(apiBaseUrl || '').trim();
+    if (!base) return '';
+    const encoded = encodeURIComponent(cpf);
+    if (base.includes('{cpf}')) return base.replaceAll('{cpf}', encoded);
+
+    const lower = base.toLowerCase();
+    if (lower.includes('parameters=') && !lower.includes('cpf')) return base + ';CPF=' + encoded;
+    if (base.endsWith('=') || base.endsWith('/')) return base + encoded;
+    if (base.includes('?')) return base + '&cpf=' + encoded;
+    return base + '?cpf=' + encoded;
+  }
+
+  function base64EncodeUnicode(str) {
+    const s = String(str ?? '');
+    const bytes = new TextEncoder().encode(s);
+    let binary = '';
+    bytes.forEach(b => { binary += String.fromCharCode(b); });
+    return btoa(binary);
+  }
+
+  function getAuthHeaders() {
+    const method = (apiAuthMethod || 'none').toLowerCase();
+    if (method === 'basic') {
+      const passwordFromUi = document.getElementById('apiPassInput')?.value || '';
+      const password = passwordFromUi || apiPass || '';
+      const user = apiUser || '';
+      if (!user || !password) return null;
+      if (passwordFromUi) {
+        apiPass = passwordFromUi;
+        sessionStorage.setItem('apiPass', apiPass);
+      }
+      const token = base64EncodeUnicode(`${user}:${password}`);
+      return { Authorization: `Basic ${token}` };
+    }
+    if (method === 'bearer') {
+      const token = apiBearerToken || '';
+      if (!token) return null;
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  }
+
+  function safeJsonParseIfString(value) {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+
+  function tryExtractTabularRecords(root) {
+    const parsed = root && typeof root === 'object' ? root : null;
+    if (!parsed) return null;
+
+    const container =
+      parsed?.data && typeof parsed.data === 'object' ? parsed.data :
+      parsed?.result && typeof parsed.result === 'object' ? parsed.result :
+      parsed;
+
+    const colsRaw =
+      container?.columns ||
+      container?.colunas ||
+      container?.campos ||
+      parsed?.columns ||
+      parsed?.colunas ||
+      null;
+
+    const rowsRaw =
+      container?.rows ||
+      container?.linhas ||
+      container?.data ||
+      container?.values ||
+      parsed?.rows ||
+      parsed?.linhas ||
+      null;
+
+    if (!Array.isArray(colsRaw) || !Array.isArray(rowsRaw)) return null;
+
+    const colNames = colsRaw.map(c => {
+      if (typeof c === 'string') return c;
+      if (c && typeof c === 'object') return c.name || c.nome || c.label || '';
+      return '';
+    }).map(normalizeCell);
+
+    if (rowsRaw.length && rowsRaw.every(r => Array.isArray(r))) {
+      return rowsRaw.map(r => {
+        const obj = {};
+        for (let i = 0; i < colNames.length; i++) {
+          const key = colNames[i] || `col_${i + 1}`;
+          obj[key] = r[i];
+        }
+        return obj;
+      });
+    }
+
+    if (rowsRaw.length && rowsRaw.every(r => r && typeof r === 'object' && !Array.isArray(r))) {
+      return rowsRaw;
+    }
+
+    return null;
+  }
+
+  function findCandidateRecordArray(root) {
+    const queue = [{ value: root, depth: 0 }];
+    const visited = new Set();
+
+    let best = null;
+    let bestScore = 0;
+
+    const add = (value, depth) => {
+      if (value === null || value === undefined) return;
+      if (typeof value !== 'object') return;
+      if (visited.has(value)) return;
+      visited.add(value);
+      queue.push({ value, depth });
+    };
+
+    while (queue.length) {
+      const { value, depth } = queue.shift();
+      if (depth > 6) continue;
+
+      if (Array.isArray(value)) {
+        const objects = value.filter(v => v && typeof v === 'object' && !Array.isArray(v));
+        if (objects.length) {
+          let hit = 0;
+          const sample = objects.slice(0, 5);
+          for (const obj of sample) {
+            const keys = Object.keys(obj || {}).map(normalizeHeaderKey);
+            if (keys.some(k => k.includes('matr')) || keys.some(k => k.includes('situ')) || keys.some(k => k.includes('status'))) {
+              hit += 1;
+            }
+          }
+          const score = objects.length * (1 + hit);
+          if (score > bestScore) {
+            bestScore = score;
+            best = value;
+          }
+        }
+
+        for (const item of value.slice(0, 50)) add(item, depth + 1);
+        continue;
+      }
+
+      for (const k of Object.keys(value)) {
+        add(value[k], depth + 1);
+      }
+    }
+
+    return Array.isArray(best) ? best : null;
+  }
+
+  function pickFirstValueByKeyPatterns(obj, patterns) {
+    if (!obj || typeof obj !== 'object') return '';
+    const entries = Object.entries(obj);
+    for (const [key, value] of entries) {
+      const nk = normalizeHeaderKey(key);
+      for (const pattern of patterns) {
+        if (pattern.test(nk)) return value;
+      }
+    }
+    return '';
+  }
+
+  function tryParseDateToMs(value) {
+    if (value === null || value === undefined || value === '') return 0;
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      if (value > 1000000000000) return Math.floor(value);
+      if (value > 25000 && value < 70000) {
+        const ms = Date.UTC(1899, 11, 30) + Math.round(value * 86400000);
+        return ms;
+      }
+      return 0;
+    }
+
+    const s = normalizeCell(value);
+    if (!s) return 0;
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const ms = Date.parse(s);
+      return Number.isFinite(ms) ? ms : 0;
+    }
+
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (m) {
+      const dd = Number(m[1]);
+      const mm = Number(m[2]);
+      const yyyy = Number(m[3]);
+      const hh = Number(m[4] || '0');
+      const min = Number(m[5] || '0');
+      const ss = Number(m[6] || '0');
+      const ms = Date.UTC(yyyy, mm - 1, dd, hh, min, ss);
+      return Number.isFinite(ms) ? ms : 0;
+    }
+
+    const ms = Date.parse(s);
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function normalizeApiRecords(json) {
+    const parsed = safeJsonParseIfString(json);
+    const tabular = tryExtractTabularRecords(parsed);
+    const tryArray = (v) => Array.isArray(v) ? v : null;
+
+    const arr =
+      tryArray(tabular) ||
+      tryArray(parsed) ||
+      tryArray(parsed?.data) ||
+      tryArray(parsed?.items) ||
+      tryArray(parsed?.records) ||
+      tryArray(parsed?.result) ||
+      tryArray(parsed?.value) ||
+      findCandidateRecordArray(parsed) ||
+      null;
+
+    const records = (arr || []).filter(r => r && typeof r === 'object' && !Array.isArray(r));
+
+    return records.map(r => {
+      const chapaRaw =
+        pickFirstValueByKeyPatterns(r, [/^chapa$/, /chapa/, /^matricula$/, /^matr$/, /matricul/, /matr/]) ??
+        r?.chapa ?? r?.Chapa ?? r?.CHAPA ??
+        r?.matricula ?? r?.Matricula ?? r?.matr ?? r?.Matr ?? r?.codigoMatricula ?? r?.codigo_matricula;
+
+      const codSituacaoRaw =
+        pickFirstValueByKeyPatterns(r, [/^codsituacao$/, /cod situacao/, /codsituac/, /^situacao$/, /tipo situacao/, /situac/, /^status$/]) ??
+        r?.codsituacao ?? r?.CodSituacao ?? r?.CODSITUACAO ??
+        r?.situacao ?? r?.Situacao ?? r?.status ?? r?.Status ?? r?.tipoSituacao ?? r?.tipo_situacao;
+
+      const cpfRaw =
+        pickFirstValueByKeyPatterns(r, [/^cpf$/, /cpf/]) ??
+        r?.cpf ?? r?.CPF ?? r?.Cpf;
+
+      const dateRaw =
+        pickFirstValueByKeyPatterns(r, [
+          /^data\s*alter/,
+          /^dt\s*alter/,
+          /ultima/,
+          /atualiz/,
+          /^data$/,
+          /^dt$/,
+          /admiss/,
+          /demiss/,
+          /mudanc/
+        ]) ?? '';
+
+      const chapa = normalizeCell(chapaRaw);
+      const codsituacao = normalizeSituacao(codSituacaoRaw);
+      const cpf = cpfDigits(cpfRaw);
+      const when = tryParseDateToMs(dateRaw);
+      return { chapa, codsituacao, cpf, when };
+    }).filter(r => r.chapa || r.codsituacao || r.cpf);
+  }
+
+  function chooseLatestApiRecord(records, importedMatricula) {
+    const imported = normalizeCell(importedMatricula);
+    const normalized = records.map(r => ({
+      chapa: normalizeCell(r.chapa ?? r.matricula ?? ''),
+      codsituacao: normalizeSituacao(r.codsituacao ?? r.situacao ?? ''),
+      cpf: cpfDigits(r.cpf ?? ''),
+      when: Number.isFinite(r.when) ? r.when : 0
+    }));
+
+    const candidates = imported
+      ? normalized.filter(r => r.chapa && r.chapa === imported)
+      : [];
+
+    const pool = candidates.length ? candidates : normalized;
+    if (pool.length === 0) return { chapa: '', codsituacao: '', when: 0, matched: false };
+
+    const withDate = pool.filter(r => r.when > 0);
+    if (withDate.length) {
+      const best = withDate.reduce((a, b) => (b.when > a.when ? b : a), withDate[0]);
+      return { ...best, matched: candidates.length > 0 };
+    }
+
+    const nonD = pool.find(r => r.codsituacao && r.codsituacao !== 'D') || null;
+    if (nonD) return { ...nonD, matched: candidates.length > 0 };
+
+    return { ...pool[0], matched: candidates.length > 0 };
+  }
+
+  function applyEmployeeInfoToMappedRow(obj) {
+    const cpf = cpfDigits(obj.cpf);
+    if (!cpf) return;
+
+    const err = employeeCacheErrors[cpf];
+    if (err) {
+      obj.comparativo = err;
+      return;
+    }
+
+    const records = employeeCache[cpf];
+    if (!Array.isArray(records)) return;
+
+    if (records.length === 0) {
+      obj.comparativo = 'Sem retorno API';
+      return;
+    }
+
+    const chosen = chooseLatestApiRecord(records, obj.matricula);
+    obj.situacao = normalizeSituacao(chosen.codsituacao);
+    obj.matriculaApi = normalizeCell(chosen.chapa);
+
+    const tipo = normalizeTipoExame(obj.tipoExame);
+    if (tipo.includes('periodico') && obj.situacao === 'D') {
+      obj.blocked = true;
+      obj.comparativo = 'Ignorado (Periódico + D)';
+      return;
+    }
+
+    const hasMismatch = obj.matriculaApi && obj.matricula && normalizeCell(obj.matriculaApi) !== normalizeCell(obj.matricula);
+    if (hasMismatch) {
+      obj.comparativo = 'Matrícula ajustada';
+      return;
+    }
+
+    if (obj.situacao === 'D') {
+      obj.comparativo = 'Situação D';
+      return;
+    }
+
+    obj.comparativo = 'OK';
+  }
+
+  function loadApiBaseUrlToUI() {
+    const input = document.getElementById('apiBaseUrlInput');
+    if (!input) return;
+    input.value = apiBaseUrl || '';
+  }
+
+  function loadApiProxyBaseUrlToUI() {
+    const input = document.getElementById('apiProxyBaseUrlInput');
+    if (!input) return;
+    input.value = apiProxyBaseUrl || '';
+  }
+
+  function saveApiBaseUrl() {
+    const input = document.getElementById('apiBaseUrlInput');
+    if (!input) return;
+    apiBaseUrl = String(input.value || '').trim();
+    if (apiBaseUrl) {
+      localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    } else {
+      apiBaseUrl = defaultApiBaseUrl;
+      localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    }
+  }
+
+  function saveApiProxyBaseUrl() {
+    const input = document.getElementById('apiProxyBaseUrlInput');
+    if (!input) return;
+    apiProxyBaseUrl = String(input.value || '').trim();
+    if (apiProxyBaseUrl) {
+      localStorage.setItem('apiProxyBaseUrl', apiProxyBaseUrl);
+    } else {
+      apiProxyBaseUrl = 'http://localhost:8787/proxy?target=';
+      localStorage.setItem('apiProxyBaseUrl', apiProxyBaseUrl);
+    }
+  }
+
+  function buildProxyUrl(targetUrl) {
+    const base = String(apiProxyBaseUrl || '').trim();
+    if (!base) return '';
+    const encoded = encodeURIComponent(String(targetUrl || ''));
+    if (base.includes('{target}')) return base.replaceAll('{target}', encoded);
+    if (base.endsWith('=') || base.endsWith('/')) return base + encoded;
+    if (base.includes('?')) return base + '&target=' + encoded;
+    return base + '?target=' + encoded;
+  }
+
+  function onAuthMethodChange() {
+    const select = document.getElementById('apiAuthMethodSelect');
+    if (!select) return;
+    apiAuthMethod = String(select.value || 'none');
+    sessionStorage.setItem('apiAuthMethod', apiAuthMethod);
+
+    const showBasic = apiAuthMethod === 'basic';
+    const showBearer = apiAuthMethod === 'bearer';
+
+    document.getElementById('apiUserField')?.classList.toggle('hidden', !showBasic);
+    document.getElementById('apiPassField')?.classList.toggle('hidden', !showBasic);
+    document.getElementById('apiBearerField')?.classList.toggle('hidden', !showBearer);
+  }
+
+  function loadApiAuthToUI() {
+    const select = document.getElementById('apiAuthMethodSelect');
+    if (select) select.value = apiAuthMethod || 'none';
+
+    const userInput = document.getElementById('apiUserInput');
+    if (userInput) userInput.value = apiUser || '';
+
+    const tokenInput = document.getElementById('apiBearerTokenInput');
+    if (tokenInput) tokenInput.value = apiBearerToken || '';
+
+    const passInput = document.getElementById('apiPassInput');
+    if (passInput) passInput.value = '';
+
+    onAuthMethodChange();
+  }
+
+  function saveApiAuth() {
+    const userInput = document.getElementById('apiUserInput');
+    if (userInput) {
+      apiUser = String(userInput.value || '').trim();
+      sessionStorage.setItem('apiUser', apiUser);
+    }
+
+    const tokenInput = document.getElementById('apiBearerTokenInput');
+    if (tokenInput) {
+      apiBearerToken = String(tokenInput.value || '').trim();
+      sessionStorage.setItem('apiBearerToken', apiBearerToken);
+    }
+  }
+
+  async function consultarComparar() {
+    if (!rawContext) {
+      showToast('Carregue um arquivo primeiro', 'error');
+      return;
+    }
+
+    saveApiBaseUrl();
+
+    saveApiProxyBaseUrl();
+    saveApiAuth();
+    const authHeaders = getAuthHeaders();
+    if (authHeaders === null) {
+      showToast('Preencha as credenciais/token da API', 'error');
+      return;
+    }
+
+    let cpfs = [];
+    const cpfIdx = rawContext?.mapping?.cpf;
+    if (typeof cpfIdx === 'number' && cpfIdx >= 0) {
+      cpfs = Array.from(new Set(rawContext.rawRows.map(r => cpfDigits(r?.[cpfIdx])).filter(cpf => cpf.length === 11)));
+    } else {
+      const baseForQuery = allRows.length ? allRows : (importMode === 'capa' ? coverRows : detailRows);
+      cpfs = Array.from(new Set(baseForQuery.map(r => cpfDigits(r.cpf)).filter(cpf => cpf.length === 11)));
+    }
+    if (cpfs.length === 0) {
+      showToast('Não encontrei CPF para consultar na API', 'error');
+      return;
+    }
+
+    employeeCache = {};
+    employeeCacheErrors = {};
+    consultStatus = { running: true, done: 0, total: cpfs.length };
+    let okCount = 0;
+    let failCount = 0;
+    updateRowCount(dados.length, getBaseRowsForMode().length);
+    updateApiProgressUi();
+    showToast(`Consultando API (${cpfs.length} CPF(s))`, 'success');
+
+    async function fetchWithFallback(targetUrl) {
+      let res;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      try {
+        apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: targetUrl, usedProxy: false, status: '', message: '' };
+        res = await fetch(targetUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return res;
+      } catch (e) {
+        clearTimeout(timeoutId);
+        const msg = String(e?.message || '').toLowerCase();
+        if (!msg.includes('failed to fetch')) throw e;
+        const proxyUrl = buildProxyUrl(targetUrl);
+        if (!proxyUrl) throw e;
+        apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: proxyUrl, usedProxy: true, status: '', message: '' };
+        return fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
+      }
+    }
+
+    async function fetchRecordsForCpf(cpf) {
+      const urlDigits = buildApiUrl(cpf);
+      if (!urlDigits) throw new Error('URL inválida');
+      apiDebug.lastCpf = cpf;
+
+      const res1 = await fetchWithFallback(urlDigits);
+      if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
+      const ct1 = res1.headers.get('content-type') || '';
+      const payload1 = ct1.includes('application/json') ? await res1.json() : await res1.text();
+      const recs1 = normalizeApiRecords(payload1);
+      const recs1Match = recs1.some(r => cpfDigits(r.cpf) === cpf);
+
+      if (recs1Match) return recs1.filter(r => cpfDigits(r.cpf) === cpf);
+
+      const formatted = formatCpf(cpf);
+      if (formatted) {
+        const urlFormatted = buildApiUrl(formatted);
+        if (urlFormatted && urlFormatted !== urlDigits) {
+          const res2 = await fetchWithFallback(urlFormatted);
+          if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+          const ct2 = res2.headers.get('content-type') || '';
+          const payload2 = ct2.includes('application/json') ? await res2.json() : await res2.text();
+          const recs2 = normalizeApiRecords(payload2);
+          const recs2Match = recs2.some(r => cpfDigits(r.cpf) === cpf);
+          if (recs2Match) return recs2.filter(r => cpfDigits(r.cpf) === cpf);
+          if (recs2.length && recs2.every(r => cpfDigits(r.cpf) && cpfDigits(r.cpf) !== cpf)) {
+            throw new Error('API não filtrou por CPF');
+          }
+          return recs2;
+        }
+      }
+
+      if (recs1.length && recs1.every(r => cpfDigits(r.cpf) && cpfDigits(r.cpf) !== cpf)) {
+        throw new Error('API não filtrou por CPF');
+      }
+
+      return recs1;
+    }
+
+    const batchSize = 2;
+    for (let i = 0; i < cpfs.length; i += batchSize) {
+      const batch = cpfs.slice(i, i + batchSize);
+      for (const cpf of batch) {
+        try {
+          const recs = await fetchRecordsForCpf(cpf);
+          employeeCache[cpf] = recs;
+          okCount += 1;
+        } catch (e) {
+          employeeCache[cpf] = [];
+          const msg = String(e?.message || '');
+          if (msg.toLowerCase().includes('failed to fetch')) {
+            employeeCacheErrors[cpf] = 'Erro API (CORS/rede) — use Proxy local';
+          } else if (msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('aborterror')) {
+            employeeCacheErrors[cpf] = 'Erro API (timeout)';
+          } else if (msg.startsWith('HTTP ')) {
+            employeeCacheErrors[cpf] = `Erro API (${msg})`;
+          } else if (msg.toLowerCase().includes('nao filtrou por cpf')) {
+            employeeCacheErrors[cpf] = 'Erro API (sem filtro CPF)';
+          } else if (msg) {
+            employeeCacheErrors[cpf] = `Erro API (${msg})`;
+          } else {
+            employeeCacheErrors[cpf] = 'Erro API';
+          }
+          failCount += 1;
+        }
+        consultStatus.done += 1;
+        if (consultStatus.done % 5 === 0 || consultStatus.done === consultStatus.total) {
+          applyApiToAllRows();
+          recomputeDerivedRowsFromAllRows();
+          rebuildAndRender(false);
+          updateRowCount(dados.length, getBaseRowsForMode().length);
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 150));
+    }
+
+    rebuildAndRender(true);
+    consultStatus.running = false;
+    updateRowCount(dados.length, getBaseRowsForMode().length);
+    updateApiProgressUi();
+    if (failCount) {
+      const firstError = Object.values(employeeCacheErrors)[0] || '';
+      const more = firstError ? ` • ${firstError}` : '';
+      showToast(`Comparativo atualizado • ${okCount} ok • ${failCount} falha(s)${more}`, 'error');
+      return;
+    }
+    showToast(`Comparativo atualizado • ${okCount} ok`, 'success');
+  }
+
+  async function testarApi() {
+    const statusEl = document.getElementById('apiTestStatus');
+    if (statusEl) statusEl.innerText = '';
+
+    if (!rawContext) {
+      showToast('Carregue um arquivo primeiro', 'error');
+      return;
+    }
+
+    saveApiBaseUrl();
+    saveApiProxyBaseUrl();
+    saveApiAuth();
+    const authHeaders = getAuthHeaders();
+    if (authHeaders === null) {
+      showToast('Preencha as credenciais/token da API', 'error');
+      return;
+    }
+
+    const cpfIdx = rawContext?.mapping?.cpf;
+    if (typeof cpfIdx !== 'number' || cpfIdx < 0) {
+      showToast('Mapeie a coluna CPF primeiro', 'error');
+      return;
+    }
+
+    const cpf = rawContext.rawRows.map(r => cpfDigits(r?.[cpfIdx])).find(c => c.length === 11) || '';
+    if (!cpf) {
+      showToast('Não encontrei CPF na planilha para testar', 'error');
+      return;
+    }
+
+    try {
+      const url = buildApiUrl(cpf);
+      apiDebug = { lastCpf: cpf, lastUrl: url, usedProxy: false, status: '', message: '' };
+      const res = await (async () => {
+        try {
+          return await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
+        } catch (e) {
+          const msg = String(e?.message || '').toLowerCase();
+          if (!msg.includes('failed to fetch')) throw e;
+          const proxyUrl = buildProxyUrl(url);
+          apiDebug.usedProxy = true;
+          apiDebug.lastUrl = proxyUrl;
+          return fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
+        }
+      })();
+
+      apiDebug.status = `HTTP ${res.status}`;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const contentType = res.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await res.json() : await res.text();
+      const recs = normalizeApiRecords(payload);
+      const match = recs.filter(r => cpfDigits(r.cpf) === cpf);
+      const via = apiDebug.usedProxy ? 'proxy' : 'direto';
+      if (statusEl) statusEl.innerText = `Teste: ${via} • ${apiDebug.status} • ${match.length} registro(s) do CPF`;
+      showToast(`Teste OK (${match.length} registro(s))`, 'success');
+    } catch (e) {
+      apiDebug.message = String(e?.message || 'Erro');
+      const via = apiDebug.usedProxy ? 'proxy' : 'direto';
+      if (statusEl) statusEl.innerText = `Teste falhou: ${via} • ${apiDebug.status || apiDebug.message}`;
+      showToast(`Teste falhou: ${apiDebug.status || apiDebug.message}`, 'error');
+    }
+  }
+
+  function buildDetailRows() {
+    if (!rawContext) return [];
+    const mapped = [];
+    for (const row of rawContext.rawRows) {
+      const obj = mapRow(row, rawContext.mapping);
+      if (!obj.nomeFuncionario) continue;
+      mapped.push(obj);
+    }
+    return mapped;
+  }
+
+  function isCoverRow(row) {
+    return normalizeCell(row?.codigoExame) === asoCoverCode;
+  }
+
+  function buildExamRows(rows) {
+    return rows.filter(r => {
+      if (isCoverRow(r)) return false;
+      const tipo = normalizeTipoExame(r.tipoExame);
+      const situacao = normalizeSituacao(r.situacao);
+      if (tipo.includes('periodico') && situacao === 'D') {
+        r.blocked = true;
+        if (!r.comparativo) r.comparativo = 'Ignorado (Periódico + D)';
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function buildCoverRows(rows) {
+    const map = new Map();
+    rows.forEach(r => {
+      const key = [
+        r.cpf || '',
+        r.matricula || '',
+        r.nomeFuncionario || '',
+        r.dataFicha || ''
+      ].join('|');
+
+      const existing = map.get(key);
+      const cover = isCoverRow(r);
+      const isExam = !cover;
+
+      if (!existing) {
+        map.set(key, {
+          nomeFuncionario: r.nomeFuncionario,
+          cpf: r.cpf,
+          matricula: r.matricula,
+          situacao: r.situacao || '',
+          matriculaApi: r.matriculaApi || '',
+          dataFicha: r.dataFicha,
+          nomeExaminador: '',
+          parecerAso: '',
+          qtdeExames: 0,
+          comparativo: r.comparativo || ''
+        });
+      }
+
+      const target = map.get(key);
+      if (isExam) target.qtdeExames += 1;
+
+      if (isCoverRow(r)) {
+        if (r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
+        if (r.parecerAso) target.parecerAso = r.parecerAso;
+        if (r.situacao) target.situacao = r.situacao;
+        if (r.matriculaApi) target.matriculaApi = r.matriculaApi;
+        if (r.comparativo) target.comparativo = r.comparativo;
+      } else {
+        if (!target.nomeExaminador && r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
+        if (!target.parecerAso && r.parecerAso) target.parecerAso = r.parecerAso;
+        if (!target.situacao && r.situacao) target.situacao = r.situacao;
+        if (!target.matriculaApi && r.matriculaApi) target.matriculaApi = r.matriculaApi;
+        if (!target.comparativo && r.comparativo) target.comparativo = r.comparativo;
+      }
+    });
+
+    return Array.from(map.values());
+  }
+
+  function buildMappingUI() {
+    const grid = document.getElementById('mappingGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!rawContext) return;
+
+    mappingFields.forEach(field => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mapping__field';
+
+      const label = document.createElement('div');
+      label.className = 'mapping__label';
+      label.textContent = field.label;
+
+      const select = document.createElement('select');
+      select.className = 'select';
+      select.id = `map_${field.key}`;
+
+      const noneOpt = document.createElement('option');
+      noneOpt.value = '-1';
+      noneOpt.textContent = '(não usar)';
+      select.appendChild(noneOpt);
+
+      rawContext.headersOriginal.forEach((h, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = h || `Coluna ${idx + 1}`;
+        select.appendChild(opt);
+      });
+
+      const currentIdx = rawContext.mapping?.[field.key];
+      select.value = String(typeof currentIdx === 'number' ? currentIdx : -1);
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(select);
+      grid.appendChild(wrapper);
+    });
+  }
+
+  function toggleMappingPanel() {
+    const panel = document.getElementById('mappingPanel');
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+  }
+
+  function resetMapping() {
+    if (!rawContext) return;
+    rawContext.defaultMapping = guessMapping(rawContext.headerKeys || []);
+    rawContext.mapping = { ...rawContext.defaultMapping };
+    buildMappingUI();
+    rebuildAndRender();
+  }
+
+  function applyMapping() {
+    if (!rawContext) return;
+    const next = { ...rawContext.mapping };
+
+    mappingFields.forEach(field => {
+      const select = document.getElementById(`map_${field.key}`);
+      if (!select) return;
+      const v = Number(select.value);
+      next[field.key] = Number.isFinite(v) ? v : -1;
+    });
+
+    rawContext.mapping = next;
+    rebuildAndRender();
+    showToast('Mapeamento aplicado', 'success');
+  }
+
+  function setImportMode(mode) {
+    importMode = mode === 'exames' ? 'exames' : 'capa';
+    document.getElementById('modeCoverBtn')?.classList.toggle('active', importMode === 'capa');
+    document.getElementById('modeExamsBtn')?.classList.toggle('active', importMode === 'exames');
+    clearAllFilters(false);
+    rebuildAndRender();
+  }
+
+  function onGlobalSearchChange() {
+    globalSearch = document.getElementById('filtro')?.value?.toLowerCase() || '';
+    rebuildAndRender(false);
+  }
+
+  function clearAllFilters(showMsg = true) {
+    columnFilters = {};
+    if (activePopover) closePopover();
+    document.querySelectorAll('.th-filter').forEach(btn => btn.classList.remove('active'));
+    if (showMsg) showToast('Filtros limpos', 'success');
+    rebuildAndRender(false);
+  }
+
+  function getBaseRowsForMode() {
+    return importMode === 'capa' ? coverRows : detailRows;
+  }
+
+  function applyColumnFilters(rows, exceptKey) {
+    const keys = Object.keys(columnFilters || {});
+    if (keys.length === 0) return rows;
+
+    return rows.filter(r => {
+      for (const key of keys) {
+        if (key === exceptKey) continue;
+        const set = columnFilters[key];
+        if (!(set instanceof Set)) continue;
+        if (set.size === 0) return false;
+        const value = normalizeCell(r[key]);
+        if (!set.has(value)) return false;
+      }
+      return true;
+    });
+  }
+
+  function applyGlobalSearch(rows, columns) {
+    if (!globalSearch) return rows;
+    return rows.filter(r => {
+      return columns.some(c => normalizeCell(r[c.key]).toLowerCase().includes(globalSearch));
+    });
+  }
+
+  function applyApiToAllRows() {
+    if (!Array.isArray(allRows) || allRows.length === 0) return;
+    allRows.forEach(r => {
+      r.situacao = '';
+      r.matriculaApi = '';
+      r.comparativo = '';
+      r.blocked = false;
+      applyEmployeeInfoToMappedRow(r);
+    });
+  }
+
+  function recomputeDerivedRowsFromAllRows() {
+    detailRows = buildExamRows(allRows);
+    coverRows = buildCoverRows(allRows);
+  }
+
+  function rebuildAndRender(recompute = true) {
+    if (recompute) {
+      allRows = buildDetailRows();
+      applyApiToAllRows();
+      recomputeDerivedRowsFromAllRows();
+    }
+
+    const columns = columnsByMode[importMode];
+    const base = getBaseRowsForMode();
+    const withColumnFilters = applyColumnFilters(base);
+    const finalRows = applyGlobalSearch(withColumnFilters, columns);
+
+    dados = finalRows;
+    renderTable(columns, finalRows);
+
+    const total = base.length;
+    updateRowCount(finalRows.length, total);
+    updateIntegrateButton();
+  }
+
+  function updateIntegrateButton() {
+    const btn = document.getElementById('integrarBtn');
+    if (!btn) return;
+    btn.disabled = dados.length === 0 || (importMode === 'exames' && !coverIntegrated);
+    btn.innerText = importMode === 'capa' ? 'Integrar Capa (parte 1)' : 'Integrar Exames (parte 2)';
+  }
+
+  function renderTable(columns, rows) {
+    renderTableHead(columns);
+    renderTableBody(columns, rows);
+  }
+
+  function renderTableHead(columns) {
+    const thead = document.getElementById('tableHead');
+    if (!thead) return;
+    thead.innerHTML = '';
+
+    const tr = document.createElement('tr');
+    columns.forEach(col => {
+      const th = document.createElement('th');
+      const wrap = document.createElement('div');
+      wrap.className = 'th';
+
+      const label = document.createElement('span');
+      label.textContent = col.label;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'th-filter';
+      btn.textContent = '▾';
+      btn.onclick = (e) => openColumnFilter(col.key, e);
+      if (columnFilters[col.key] instanceof Set) btn.classList.add('active');
+
+      wrap.appendChild(label);
+      wrap.appendChild(btn);
+      th.appendChild(wrap);
+      tr.appendChild(th);
+    });
+
+    thead.appendChild(tr);
+  }
+
+  function renderTableBody(columns, rows) {
+    const tbody = document.querySelector('#tabela tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    rows.forEach(item => {
+      const tr = document.createElement('tr');
+      columns.forEach(col => {
+        const td = document.createElement('td');
+        td.textContent = normalizeCell(item[col.key]);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function closePopover() {
+    if (activePopover) {
+      activePopover.remove();
+      activePopover = null;
+      activePopoverKey = null;
+    }
+    document.removeEventListener('mousedown', onOutsidePopoverClick, true);
+    document.removeEventListener('keydown', onPopoverKeyDown, true);
+  }
+
+  function onOutsidePopoverClick(e) {
+    if (!activePopover) return;
+    if (activePopover.contains(e.target)) return;
+    closePopover();
+  }
+
+  function onPopoverKeyDown(e) {
+    if (e.key === 'Escape') closePopover();
+  }
+
+  function openColumnFilter(key, event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!rawContext) return;
+    if (activePopoverKey === key) {
+      closePopover();
+      return;
+    }
+
+    closePopover();
+    activePopoverKey = key;
+
+    const columns = columnsByMode[importMode];
+    const base = getBaseRowsForMode();
+    const rowsForList = applyColumnFilters(base, key);
+    const allValuesSet = new Set();
+    rowsForList.forEach(r => allValuesSet.add(normalizeCell(r[key])));
+
+    const allValues = Array.from(allValuesSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const current = columnFilters[key] instanceof Set ? new Set(columnFilters[key]) : new Set(allValues);
+
+    const pop = document.createElement('div');
+    pop.className = 'filter-popover';
+
+    const head = document.createElement('div');
+    head.className = 'filter-popover__head';
+
+    const title = document.createElement('div');
+    title.className = 'filter-popover__title';
+    title.textContent = `Filtro: ${columns.find(c => c.key === key)?.label || key}`;
+
+    const search = document.createElement('input');
+    search.className = 'input';
+    search.placeholder = 'Pesquisar valores...';
+    search.oninput = () => renderFilterList();
+
+    head.appendChild(title);
+    head.appendChild(search);
+
+    const list = document.createElement('div');
+    list.className = 'filter-popover__list';
+
+    const actions = document.createElement('div');
+    actions.className = 'filter-popover__actions';
+
+    const btnCancel = document.createElement('button');
+    btnCancel.type = 'button';
+    btnCancel.className = 'button';
+    btnCancel.textContent = 'Cancelar';
+    btnCancel.onclick = () => closePopover();
+
+    const btnClear = document.createElement('button');
+    btnClear.type = 'button';
+    btnClear.className = 'button';
+    btnClear.textContent = 'Limpar';
+    btnClear.onclick = () => {
+      current.clear();
+      allValues.forEach(v => current.add(v));
+      delete columnFilters[key];
+      rebuildAndRender(false);
+      closePopover();
+    };
+
+    const btnApply = document.createElement('button');
+    btnApply.type = 'button';
+    btnApply.className = 'button button--primary';
+    btnApply.textContent = 'Aplicar';
+    btnApply.onclick = () => {
+      if (current.size === allValues.length) {
+        delete columnFilters[key];
+      } else {
+        columnFilters[key] = new Set(current);
+      }
+      rebuildAndRender(false);
+      closePopover();
+    };
+
+    actions.appendChild(btnCancel);
+    actions.appendChild(btnClear);
+    actions.appendChild(btnApply);
+
+    pop.appendChild(head);
+    pop.appendChild(list);
+    pop.appendChild(actions);
+
+    function renderFilterList() {
+      const term = (search.value || '').toLowerCase();
+      list.innerHTML = '';
+
+      const shown = allValues.filter(v => v.toLowerCase().includes(term));
+      const limited = shown.slice(0, 300);
+
+      const allWrap = document.createElement('label');
+      allWrap.className = 'check';
+      const allCb = document.createElement('input');
+      allCb.type = 'checkbox';
+      allCb.checked = current.size === allValues.length;
+      allCb.onchange = () => {
+        current.clear();
+        if (allCb.checked) allValues.forEach(v => current.add(v));
+        renderFilterList();
+      };
+      const allText = document.createElement('span');
+      allText.textContent = 'Selecionar tudo';
+      allWrap.appendChild(allCb);
+      allWrap.appendChild(allText);
+      list.appendChild(allWrap);
+
+      limited.forEach(v => {
+        const wrap = document.createElement('label');
+        wrap.className = 'check';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = current.has(v);
+        cb.onchange = () => {
+          if (cb.checked) current.add(v);
+          else current.delete(v);
+          renderFilterList();
+        };
+        const txt = document.createElement('span');
+        txt.textContent = v === '' ? '(vazio)' : v;
+        wrap.appendChild(cb);
+        wrap.appendChild(txt);
+        list.appendChild(wrap);
+      });
+
+      if (shown.length > limited.length) {
+        const more = document.createElement('div');
+        more.className = 'meta';
+        more.style.padding = '6px 0';
+        more.textContent = `Mostrando ${limited.length} de ${shown.length} valores`;
+        list.appendChild(more);
+      }
+    }
+
+    renderFilterList();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const left = Math.min(rect.left, window.innerWidth - 300);
+    const top = Math.min(rect.bottom + 6, window.innerHeight - 440);
+    pop.style.left = `${Math.max(10, left)}px`;
+    pop.style.top = `${Math.max(10, top)}px`;
+
+    document.body.appendChild(pop);
+    activePopover = pop;
+
+    document.addEventListener('mousedown', onOutsidePopoverClick, true);
+    document.addEventListener('keydown', onPopoverKeyDown, true);
+  }
+
+  function loadFile() {
+    const file = document.getElementById('fileInput').files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+    const ext = getFileExtension(file.name);
+
+    reader.onload = function(e) {
+      try {
+        if (ext === 'xlsx' || ext === 'xls') {
+          rawContext = parseXlsxArrayBufferToContext(e.target.result);
+        } else {
+          rawContext = parseCsvTextToContext(e.target.result);
+        }
+
+        if (!rawContext) throw new Error('Arquivo vazio ou inválido');
+
+        buildMappingUI();
+        rebuildAndRender(true);
+        showToast('Arquivo carregado com sucesso', 'success');
+      } catch (err) {
+        rawContext = null;
+        dados = [];
+        detailRows = [];
+        coverRows = [];
+        renderTable(columnsByMode[importMode], dados);
+        updateRowCount(0, 0);
+        updateIntegrateButton();
+        showToast(err?.message || 'Falha ao ler o arquivo', 'error');
+      }
+    };
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+  }
+
+  function integrar() {
+    if (dados.length === 0) {
+      showToast('Nenhum dado para integrar', 'error');
+      return;
+    }
+
+    if (importMode === 'exames' && !coverIntegrated) {
+      showToast('Integre primeiro a capa do ASO (parte 1)', 'error');
+      return;
+    }
+
+    const itens = dados.filter(r => !r.blocked);
+    if (itens.length === 0) {
+      showToast('Nenhum dado válido para integrar', 'error');
+      return;
+    }
+
+    // Simulação API RM
+    setTimeout(() => {
+      if (importMode === 'capa') {
+        coverIntegrated = true;
+        localStorage.setItem('coverIntegrated', '1');
+        updateIntegrateButton();
+        showToast('Capa integrada com sucesso', 'success');
+        return;
+      }
+      showToast('Exames integrados com sucesso', 'success');
+    }, 1000);
+  }
+
+  function showToast(msg, variant) {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.classList.remove('toast--success', 'toast--error');
+    toast.classList.add(variant === 'success' ? 'toast--success' : 'toast--error');
+    toast.style.display = 'block';
+
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 3000);
+  }
+
+  function updateRowCount(shown, total) {
+    const el = document.getElementById('rowCount');
+    if (!el) return;
+    if (!total) {
+      el.innerText = '';
+      return;
+    }
+    const base = `${shown} exibido(s) • ${total} total`;
+    if (consultStatus?.running && consultStatus.total) {
+      el.innerText = `${base} • API ${consultStatus.done}/${consultStatus.total}`;
+      updateApiProgressUi();
+      return;
+    }
+    el.innerText = base;
+    updateApiProgressUi();
+  }
+
+  function updateApiProgressUi() {
+    const wrap = document.getElementById('apiProgressWrap');
+    const bar = document.getElementById('apiProgressBar');
+    const text = document.getElementById('apiProgressText');
+    if (!wrap || !bar || !text) return;
+
+    if (!consultStatus?.running) {
+      wrap.classList.add('hidden');
+      return;
+    }
+
+    wrap.classList.remove('hidden');
+    const total = Math.max(1, Number(consultStatus.total || 1));
+    const done = Math.min(total, Number(consultStatus.done || 0));
+    const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+    bar.style.width = `${pct}%`;
+    text.innerText = `${done}/${total} • ${pct}%`;
+  }
+
+  applyModuleState();
+  loadApiBaseUrlToUI();
+  loadApiProxyBaseUrlToUI();
+  loadApiAuthToUI();
+  renderTable(columnsByMode[importMode], []);
+  updateIntegrateButton();
+  showPage(currentPage);
+</script>
+
+</body>
+</html>
