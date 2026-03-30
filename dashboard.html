@@ -24,6 +24,7 @@
         <div class="nav-module__items">
           <button class="nav-item active" type="button" data-page="asoImport" onclick="showPage('asoImport')">Importação</button>
           <button class="nav-item" type="button" data-page="asoHistorico" onclick="showPage('asoHistorico')">Histórico</button>
+          <button class="nav-item" type="button" data-page="asoRelatorios" onclick="showPage('asoRelatorios')">Relatórios</button>
         </div>
       </div>
 
@@ -164,6 +165,56 @@
       </div>
     </section>
 
+    <section id="asoRelatoriosPage" class="page hidden">
+      <div class="card">
+        <div class="card__header">
+          <div>
+            <h2>Relatórios</h2>
+            <div class="muted">Resumo da planilha importada.</div>
+          </div>
+        </div>
+
+        <div id="reportEmpty" class="muted">Carregue uma planilha para visualizar os relatórios.</div>
+
+        <div id="reportContent" class="stats-grid hidden">
+          <div class="stat-card">
+            <div class="stat-card__label">Importados (capas)</div>
+            <div id="reportTotal" class="stat-card__value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Apto</div>
+            <div id="reportApto" class="stat-card__value stat-card__value--success">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Inapto</div>
+            <div id="reportInapto" class="stat-card__value stat-card__value--danger">0</div>
+          </div>
+        </div>
+
+        <div id="reportBars" class="report-bars hidden">
+          <div class="report-bar">
+            <div class="report-bar__head">
+              <div class="report-bar__title">Apto</div>
+              <div id="reportAptoPct" class="report-bar__meta">0%</div>
+            </div>
+            <div class="report-bar__track">
+              <div id="reportAptoFill" class="report-bar__fill report-bar__fill--success" style="width:0%;"></div>
+            </div>
+          </div>
+
+          <div class="report-bar">
+            <div class="report-bar__head">
+              <div class="report-bar__title">Inapto</div>
+              <div id="reportInaptoPct" class="report-bar__meta">0%</div>
+            </div>
+            <div class="report-bar__track">
+              <div id="reportInaptoFill" class="report-bar__fill report-bar__fill--danger" style="width:0%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="vacinaPage" class="page hidden">
       <div class="card">
         <h2>Módulo Vacinas</h2>
@@ -204,6 +255,7 @@
   const pageConfig = {
     asoImport: { title: 'Importação de ASO', canIntegrate: true },
     asoHistorico: { title: 'Histórico de ASO', canIntegrate: false },
+    asoRelatorios: { title: 'Relatórios', canIntegrate: false },
     vacina: { title: 'Vacinas', canIntegrate: false }
   };
 
@@ -224,6 +276,7 @@
     integrarBtn.disabled = !cfg.canIntegrate;
 
     closeSidebar();
+    renderAsoRelatorios();
   }
 
   function logout() {
@@ -526,6 +579,57 @@
 
   function normalizeTipoExame(value) {
     return normalizeHeaderKey(value);
+  }
+
+  function classifyParecerAso(value) {
+    const key = normalizeHeaderKey(value);
+    if (!key) return 'INDEFINIDO';
+    if (key.includes('inapto')) return 'INAPTO';
+    if (key.includes('apto')) return 'APTO';
+    return 'INDEFINIDO';
+  }
+
+  function renderAsoRelatorios() {
+    const emptyEl = document.getElementById('reportEmpty');
+    const contentEl = document.getElementById('reportContent');
+    const barsEl = document.getElementById('reportBars');
+
+    if (!emptyEl || !contentEl || !barsEl) return;
+
+    const total = Array.isArray(coverRows) ? coverRows.length : 0;
+    if (!total) {
+      emptyEl.classList.remove('hidden');
+      contentEl.classList.add('hidden');
+      barsEl.classList.add('hidden');
+      return;
+    }
+
+    let apto = 0;
+    let inapto = 0;
+
+    coverRows.forEach(r => {
+      const status = classifyParecerAso(r.parecerAso);
+      if (status === 'APTO') apto += 1;
+      if (status === 'INAPTO') inapto += 1;
+    });
+
+    const totalForPct = Math.max(1, total);
+    const aptoPct = Math.round((apto / totalForPct) * 100);
+    const inaptoPct = Math.round((inapto / totalForPct) * 100);
+
+    document.getElementById('reportTotal').innerText = String(total);
+    document.getElementById('reportApto').innerText = String(apto);
+    document.getElementById('reportInapto').innerText = String(inapto);
+
+    document.getElementById('reportAptoPct').innerText = `${aptoPct}%`;
+    document.getElementById('reportInaptoPct').innerText = `${inaptoPct}%`;
+
+    document.getElementById('reportAptoFill').style.width = `${aptoPct}%`;
+    document.getElementById('reportInaptoFill').style.width = `${inaptoPct}%`;
+
+    emptyEl.classList.add('hidden');
+    contentEl.classList.remove('hidden');
+    barsEl.classList.remove('hidden');
   }
 
   function buildApiUrl(cpf) {
@@ -1393,6 +1497,7 @@
     const total = base.length;
     updateRowCount(finalRows.length, total);
     updateIntegrateButton();
+    renderAsoRelatorios();
   }
 
   function updateIntegrateButton() {
