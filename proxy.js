@@ -28,7 +28,7 @@ async function handler(req, res) {
       204,
       {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Accept, Content-Type',
         'Access-Control-Max-Age': '86400'
       },
@@ -83,18 +83,42 @@ async function handler(req, res) {
       Accept: req.headers.accept || 'application/json'
     };
     if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+    if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type'];
+
+    const method = (req.method || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'POST') {
+      send(
+        res,
+        405,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ error: 'Method not allowed' })
+      );
+      return;
+    }
+
+    const bodyBuffer = await new Promise((resolve, reject) => {
+      if (method === 'GET') return resolve(Buffer.alloc(0));
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', reject);
+    });
 
     const urlObj = new URL(target);
     const upstreamResponse = await new Promise((resolve, reject) => {
       const r = https.request(
         urlObj,
         {
-          method: 'GET',
+          method,
           headers
         },
         resolve
       );
       r.on('error', reject);
+      if (method === 'POST') r.write(bodyBuffer);
       r.end();
     });
 
@@ -108,7 +132,12 @@ async function handler(req, res) {
     const contentType = upstreamResponse.headers['content-type'] || 'application/octet-stream';
     const status = upstreamResponse.statusCode || 502;
 
-    send(res, status, { 'Access-Control-Allow-Origin': origin, 'Content-Type': contentType }, Buffer.concat(chunks));
+    send(
+      res,
+      status,
+      { 'Access-Control-Allow-Origin': origin, 'Content-Type': contentType },
+      Buffer.concat(chunks)
+    );
   } catch {
     send(
       res,

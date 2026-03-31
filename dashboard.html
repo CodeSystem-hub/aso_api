@@ -271,6 +271,14 @@
   let currentConsultAbortController = null;
   let apiProgressTimerId = null;
   let apiDebug = { lastCpf: '', lastUrl: '', usedProxy: false, status: '', message: '' };
+  let idConsultaByKey = (() => {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem('idConsultaByKey') || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  })();
   const pageSize = 100;
   let currentListPage = 1;
   let currentPage = 'asoImport';
@@ -601,6 +609,19 @@
 
   function normalizeTipoExame(value) {
     return normalizeHeaderKey(value);
+  }
+
+  function buildCoverKey(obj) {
+    return [
+      cpfDigits(obj?.cpf || ''),
+      normalizeCell(obj?.matricula || ''),
+      normalizeCell(obj?.nomeFuncionario || ''),
+      formatDateForRm(obj?.dataFicha || '')
+    ].join('|');
+  }
+
+  function persistIdConsultaByKey() {
+    sessionStorage.setItem('idConsultaByKey', JSON.stringify(idConsultaByKey || {}));
   }
 
   function classifyParecerAso(value) {
@@ -1323,7 +1344,18 @@
   }
 
   function isCoverRow(row) {
-    return normalizeCell(row?.codigoExame) === asoCoverCode;
+    const parecer = classifyParecerAso(row?.parecerAso);
+    if (parecer === 'APTO' || parecer === 'INAPTO') return true;
+
+    const code = normalizeCell(row?.codigoExame);
+    if (code !== asoCoverCode) return false;
+
+    const nomeKey = normalizeHeaderKey(row?.nomeExame);
+    if (nomeKey.includes('avaliacao clinica') || (nomeKey.includes('avaliacao') && nomeKey.includes('clinica'))) {
+      return true;
+    }
+
+    return false;
   }
 
   function buildExamRows(rows) {
@@ -1362,10 +1394,12 @@
           situacao: r.situacao || '',
           matriculaApi: r.matriculaApi || '',
           dataFicha: r.dataFicha,
+          tipoExame: '',
           nomeExaminador: '',
           parecerAso: '',
           qtdeExames: 0,
-          comparativo: r.comparativo || ''
+          comparativo: r.comparativo || '',
+          idConsulta: idConsultaByKey[key] || ''
         });
       }
 
@@ -1373,12 +1407,14 @@
       if (isExam) target.qtdeExames += 1;
 
       if (isCoverRow(r)) {
+        if (r.tipoExame) target.tipoExame = r.tipoExame;
         if (r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
         if (r.parecerAso) target.parecerAso = r.parecerAso;
         if (r.situacao) target.situacao = r.situacao;
         if (r.matriculaApi) target.matriculaApi = r.matriculaApi;
         if (r.comparativo) target.comparativo = r.comparativo;
       } else {
+        if (!target.tipoExame && r.tipoExame) target.tipoExame = r.tipoExame;
         if (!target.nomeExaminador && r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
         if (!target.parecerAso && r.parecerAso) target.parecerAso = r.parecerAso;
         if (!target.situacao && r.situacao) target.situacao = r.situacao;
@@ -1903,6 +1939,419 @@
     }
   }
 
+  function buildConsultaTipoUrl(tipo) {
+    const base = defaultApiBaseUrl.replace(/CPF=\{cpf\}/i, '').replace(/;CPF=\{cpf\}/i, '');
+    if (base.toLowerCase().includes('parameters=')) {
+      const hasTipo = /[?&]parameters=[^#]*tipo=/i.test(base) || /;tipo=/i.test(base);
+      if (hasTipo) return base.replace(/TIPO=[^;&]+/i, `TIPO=${encodeURIComponent(tipo)}`);
+      return base + `;TIPO=${encodeURIComponent(tipo)}`;
+    }
+    const sep = base.includes('?') ? '&' : '?';
+    return base + `${sep}TIPO=${encodeURIComponent(tipo)}`;
+  }
+
+  function buildTokenUrl() {
+    const u = new URL(apiBaseUrl || defaultApiBaseUrl);
+    return `${u.origin}/api/connect/token/`;
+  }
+
+  function buildInsertCapaUrl() {
+    const u = new URL(apiBaseUrl || defaultApiBaseUrl);
+    return `${u.origin}/RMSRestDataServer/rest/SmtConsultasProntData`;
+  }
+
+  async function fetchWithProxyFallback(url, options) {
+    try {
+      return await fetch(url, options);
+    } catch (e) {
+      const msg = String(e?.message || '').toLowerCase();
+      if (!msg.includes('failed to fetch')) throw e;
+      const proxyUrl = buildProxyUrl(url);
+      if (!proxyUrl) throw e;
+      return fetch(proxyUrl, options);
+    }
+  }
+
+  async function getRmAccessToken() {
+    const cached = sessionStorage.getItem('rmAccessToken') || '';
+    const exp = Number(sessionStorage.getItem('rmAccessTokenExpiresAt') || '0');
+    if (cached && exp && Date.now() < exp - 30000) return cached;
+
+    if (!apiUser || !apiPass) throw new Error('Credenciais ausentes');
+
+    const tokenUrl = buildTokenUrl();
+    const params = new URLSearchParams();
+    params.set('grant_type', 'password');
+    params.set('username', apiUser);
+    params.set('password', apiPass);
+
+    const clientId = localStorage.getItem('rmClientId') || '';
+    const clientSecret = localStorage.getItem('rmClientSecret') || '';
+    const scope = localStorage.getItem('rmScope') || '';
+    if (clientId) params.set('client_id', clientId);
+    if (clientSecret) params.set('client_secret', clientSecret);
+    if (scope) params.set('scope', scope);
+
+    const res = await fetchWithProxyFallback(tokenUrl, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Token HTTP ${res.status}${text ? `: ${text}` : ''}`);
+    }
+
+    const json = await res.json();
+    const token = String(json?.access_token || '');
+    const expiresIn = Number(json?.expires_in || 0);
+    if (!token) throw new Error('Token inválido');
+
+    sessionStorage.setItem('rmAccessToken', token);
+    if (expiresIn) {
+      sessionStorage.setItem('rmAccessTokenExpiresAt', String(Date.now() + expiresIn * 1000));
+    } else {
+      sessionStorage.removeItem('rmAccessTokenExpiresAt');
+    }
+
+    return token;
+  }
+
+  async function fetchRmJson(url, options) {
+    const token = await getRmAccessToken();
+    const headers = {
+      ...(options?.headers || {}),
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`
+    };
+    const res = await fetchWithProxyFallback(url, { ...(options || {}), headers });
+    const contentType = res.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json') ? await res.json() : await res.text();
+    if (!res.ok) {
+      const msg = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      throw new Error(`HTTP ${res.status}${msg ? `: ${msg}` : ''}`);
+    }
+    return payload;
+  }
+
+  function normalizeConsultaRows(payload) {
+    const parsed = safeJsonParseIfString(payload);
+    const tabular = tryExtractTabularRecords(parsed);
+    const arr = Array.isArray(tabular) ? tabular : (Array.isArray(parsed) ? parsed : findCandidateRecordArray(parsed));
+    return (arr || []).filter(r => r && typeof r === 'object' && !Array.isArray(r));
+  }
+
+  function pickValue(obj, patterns) {
+    const v = pickFirstValueByKeyPatterns(obj, patterns);
+    return v === '' ? '' : v;
+  }
+
+  function guessCodTipoConsultaEsocial(tipoExame) {
+    const k = normalizeHeaderKey(tipoExame);
+    if (!k) return 'P';
+    if (k.includes('period')) return 'P';
+    if (k.includes('admiss')) return 'A';
+    if (k.includes('demiss')) return 'D';
+    if (k.includes('retorno')) return 'R';
+    if (k.includes('mudanca') || k.includes('mudança') || k.includes('funcao') || k.includes('função')) return 'M';
+    return 'P';
+  }
+
+  function formatDateForRm(value) {
+    const s = normalizeCell(value);
+    if (!s) return '';
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) return s.slice(0, 10);
+    return s;
+  }
+
+  function formatDateTimeForRmExam(value) {
+    const s = normalizeCell(value);
+    if (!s) return '';
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[2]}-${m[1]} 00:00:00.000`;
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const date = s.slice(0, 10);
+      return `${date} 00:00:00.000`;
+    }
+    return s;
+  }
+
+  async function integrarCapaReal(capasToIntegrate) {
+    showToast('Integrando capa...', 'success');
+
+    const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
+    const consultaMedicoUrl = buildConsultaTipoUrl('MEDICO');
+    const consultaIdAsoUrl = buildConsultaTipoUrl('IDASO');
+    const insertUrl = buildInsertCapaUrl();
+
+    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET' });
+    const funcionarios = normalizeConsultaRows(funcionariosPayload);
+    const funcionarioMap = new Map();
+    funcionarios.forEach(r => {
+      const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
+      const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
+      const chapa = normalizeCell(pickValue(r, [/^chapa$/, /chapa/]) ?? r.CHAPA ?? r.chapa);
+      if (cpf && Number.isFinite(codPessoa)) funcionarioMap.set(cpf, { codPessoa, chapa });
+    });
+
+    const medicosPayload = await fetchRmJson(consultaMedicoUrl, { method: 'GET' });
+    const medicos = normalizeConsultaRows(medicosPayload);
+    const medicoMap = new Map();
+    medicos.forEach(r => {
+      const nome = normalizeHeaderKey(pickValue(r, [/^nome$/, /nome/]) ?? r.NOME ?? r.nome);
+      const codigo = Number(pickValue(r, [/^codigo$/, /cod/]) ?? r.CODIGO ?? r.codigo);
+      if (nome && Number.isFinite(codigo)) medicoMap.set(nome, codigo);
+    });
+
+    const idAsoPayload = await fetchRmJson(consultaIdAsoUrl, { method: 'GET' });
+    const idRows = normalizeConsultaRows(idAsoPayload);
+    const ultimo = Number(
+      pickValue(idRows?.[0] || {}, [/^ultimoi?d$/, /ultimoi?d/, /ultimo/]) ??
+      idRows?.[0]?.ULTIMOID ??
+      idRows?.[0]?.ultimoiD ??
+      idRows?.[0]?.ultimOid ??
+      0
+    );
+    let nextId = Number.isFinite(ultimo) ? ultimo + 1 : 1;
+
+    const createdBy = localStorage.getItem('rmRecCreatedBy') || '00204443385';
+    const codColigada = 1;
+    const codConsultaPront = 1;
+    const codEntidade = '00007';
+    const codTipoConsulta = '00003';
+
+    let ok = 0;
+    let fail = 0;
+
+    const list = Array.isArray(capasToIntegrate) ? capasToIntegrate : coverRows;
+    for (const capa of list) {
+      if (capa.blocked) continue;
+
+      const cpf = cpfDigits(capa.cpf);
+      const func = funcionarioMap.get(cpf);
+      if (!func) {
+        capa.comparativo = 'Erro integração (sem CODPESSOA)';
+        fail += 1;
+        continue;
+      }
+
+      const medicoNomeKey = normalizeHeaderKey(capa.nomeExaminador);
+      const codMedico = medicoNomeKey ? medicoMap.get(medicoNomeKey) : null;
+      if (!codMedico) {
+        capa.comparativo = 'Erro integração (médico não encontrado)';
+        fail += 1;
+        continue;
+      }
+
+      const status = classifyParecerAso(capa.parecerAso);
+      if (status !== 'APTO' && status !== 'INAPTO') {
+        capa.comparativo = 'Erro integração (parecer indefinido)';
+        fail += 1;
+        continue;
+      }
+
+      const data = formatDateForRm(capa.dataFicha);
+      if (!data) {
+        capa.comparativo = 'Erro integração (data inválida)';
+        fail += 1;
+        continue;
+      }
+
+      const payload = {
+        CODPESSOA: func.codPessoa,
+        CODCOLIGADA: codColigada,
+        IDCONSULTA: nextId,
+        CODCONSULTAPRONT: codConsultaPront,
+        RECCREATEDBY: createdBy,
+        OBSERVACAO: null,
+        RECCREATEDON: data,
+        DATACONSULTA: data,
+        RECMODIFIEDBY: createdBy,
+        APTO: status === 'APTO' ? 1 : 0,
+        RECMODIFIEDON: data,
+        CODTIPOCONSULTA: codTipoConsulta,
+        NOMEMEDICO: null,
+        REGCONSELHO: null,
+        CODMEDICO: codMedico,
+        CODTIPOCONSULTAESOCIAL: guessCodTipoConsultaEsocial(capa.tipoExame),
+        HORACONSULTA: null,
+        TIPO: 1,
+        INICIOATENDIMENTO: null,
+        TERMINOATENDIMENTO: null,
+        CODENTIDADE: codEntidade,
+        CHAPA: normalizeCell(capa.matriculaApi || func.chapa || capa.matricula),
+        DATAASO: data,
+        CODSECAODEST: null,
+        CODFUNCAODEST: null,
+        CODPOSTODEST: null,
+        CODLOCALTRABDEST: null,
+        DATAMUD: null
+      };
+
+      try {
+        await fetchRmJson(insertUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            CODCOLIGADA: String(codColigada),
+            CODPESSOA: String(func.codPessoa)
+          },
+          body: JSON.stringify(payload)
+        });
+        capa.comparativo = 'Capa integrada';
+        const key = buildCoverKey(capa);
+        idConsultaByKey[key] = String(nextId);
+        persistIdConsultaByKey();
+        capa.idConsulta = String(nextId);
+        nextId += 1;
+        ok += 1;
+      } catch (e) {
+        capa.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
+        fail += 1;
+        nextId += 1;
+      }
+    }
+
+    coverIntegrated = ok > 0;
+    localStorage.setItem('coverIntegrated', coverIntegrated ? '1' : '0');
+    rebuildAndRender(false);
+    updateIntegrateButton();
+
+    if (fail) {
+      showToast(`Capa integrada • ${ok} ok • ${fail} falha(s)`, 'error');
+      return;
+    }
+    showToast(`Capa integrada • ${ok} ok`, 'success');
+  }
+
+  async function integrarExamesReal(examesToIntegrate) {
+    showToast('Integrando exames...', 'success');
+
+    const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
+    const consultaExameUrl = buildConsultaTipoUrl('EXAME');
+    const insertUrl = new URL(apiBaseUrl || defaultApiBaseUrl).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
+
+    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET' });
+    const funcionarios = normalizeConsultaRows(funcionariosPayload);
+    const funcionarioMap = new Map();
+    funcionarios.forEach(r => {
+      const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
+      const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
+      const chapa = normalizeCell(pickValue(r, [/^chapa$/, /chapa/]) ?? r.CHAPA ?? r.chapa);
+      if (cpf && Number.isFinite(codPessoa)) funcionarioMap.set(cpf, { codPessoa, chapa });
+    });
+
+    const examePayload = await fetchRmJson(consultaExameUrl, { method: 'GET' });
+    const exames = normalizeConsultaRows(examePayload);
+    const procByCode = new Map();
+    exames.forEach(r => {
+      const code = Number(pickValue(r, [/^codexame$/, /cod exame/]) ?? r.CODEXAME ?? r.codexame);
+      const proc = normalizeCell(pickValue(r, [/^codprocedimento$/, /procedimento/]) ?? r.CODPROCEDIMENTO ?? r.codprocedimento);
+      if (Number.isFinite(code) && proc) procByCode.set(code, proc);
+    });
+
+    const aptoByKey = new Map();
+    coverRows.forEach(c => {
+      const key = buildCoverKey(c);
+      const status = classifyParecerAso(c.parecerAso);
+      if (status === 'APTO') aptoByKey.set(key, 1);
+      if (status === 'INAPTO') aptoByKey.set(key, 0);
+    });
+
+    let ok = 0;
+    let fail = 0;
+
+    const list = Array.isArray(examesToIntegrate) ? examesToIntegrate : detailRows;
+    for (const ex of list) {
+      if (ex.blocked) continue;
+      const cpf = cpfDigits(ex.cpf);
+      const func = funcionarioMap.get(cpf);
+      if (!func) {
+        ex.comparativo = 'Erro integração (sem CODPESSOA)';
+        fail += 1;
+        continue;
+      }
+
+      const key = buildCoverKey(ex);
+      const idConsulta = Number(idConsultaByKey[key] || ex.idConsulta || 0);
+      if (!Number.isFinite(idConsulta) || idConsulta <= 0) {
+        ex.comparativo = 'Erro integração (sem IDCONSULTA)';
+        fail += 1;
+        continue;
+      }
+
+      const codExame = Number(String(ex.codigoExame || '').replace(/\D/g, ''));
+      if (!Number.isFinite(codExame)) {
+        ex.comparativo = 'Erro integração (CODEXAME inválido)';
+        fail += 1;
+        continue;
+      }
+
+      const codProcedimento = procByCode.get(codExame) || '';
+      if (!codProcedimento) {
+        ex.comparativo = 'Erro integração (CODPROCEDIMENTO não encontrado)';
+        fail += 1;
+        continue;
+      }
+
+      const data = formatDateTimeForRmExam(ex.dataResExame || ex.dataFicha);
+      if (!data) {
+        ex.comparativo = 'Erro integração (DATAEXAME inválida)';
+        fail += 1;
+        continue;
+      }
+
+      const apto = aptoByKey.has(key) ? aptoByKey.get(key) : 1;
+
+      const payload = {
+        CODCOLIGADA: 1,
+        CODENTIDADE: '00007',
+        CODEXAME: codExame,
+        CODPESSOA: func.codPessoa,
+        CODPROCEDIMENTO: codProcedimento,
+        DATAEXAME: data,
+        APTO: apto,
+        ATIVOOCUPACIONAL: 0,
+        EXAMERECUSADO: 0,
+        EXAMEREFERENCIAL: 0,
+        IDCONSULTA: idConsulta,
+        INTERPREXM: -1,
+        RESULTNORMAL: 0,
+        OBSERVACAO: null,
+        DESCANORMAL: null,
+        TIPOANORMALIDADE: null,
+        CODLAUDOEXAME: null,
+        CODMEMOOBS: null
+      };
+
+      try {
+        await fetchRmJson(insertUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            CODCOLIGADA: '1',
+            CODPESSOA: String(func.codPessoa)
+          },
+          body: JSON.stringify(payload)
+        });
+        ex.comparativo = 'Exame integrado';
+        ok += 1;
+      } catch (e) {
+        ex.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
+        fail += 1;
+      }
+    }
+
+    rebuildAndRender(false);
+    if (fail) {
+      showToast(`Exames integrados • ${ok} ok • ${fail} falha(s)`, 'error');
+      return;
+    }
+    showToast(`Exames integrados • ${ok} ok`, 'success');
+  }
+
   function integrar() {
     if (dados.length === 0) {
       showToast('Nenhum dado para integrar', 'error');
@@ -1920,17 +2369,16 @@
       return;
     }
 
-    // Simulação API RM
-    setTimeout(() => {
-      if (importMode === 'capa') {
-        coverIntegrated = true;
-        localStorage.setItem('coverIntegrated', '1');
-        updateIntegrateButton();
-        showToast('Capa integrada com sucesso', 'success');
-        return;
-      }
-      showToast('Exames integrados com sucesso', 'success');
-    }, 1000);
+    if (importMode === 'capa') {
+      integrarCapaReal(itens).catch(e => {
+        showToast(String(e?.message || 'Falha na integração'), 'error');
+      });
+      return;
+    }
+
+    integrarExamesReal(itens).catch(e => {
+      showToast(String(e?.message || 'Falha na integração'), 'error');
+    });
   }
 
   function showToast(msg, variant) {
