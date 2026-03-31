@@ -38,8 +38,7 @@
         </div>
       </div>
 
-      <div class="nav-divider"></div>
-      <button class="nav-item nav-item--danger" type="button" onclick="logout()">Sair</button>
+      <button class="nav-item nav-item--danger nav-item--logout" type="button" onclick="logout()">Sair</button>
     </nav>
   </aside>
 
@@ -58,37 +57,47 @@
       </div>
     </div>
 
-    <div id="apiProgressWrap" class="card hidden" style="padding:12px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <div style="font-weight:800; font-size:13px;">Consulta/Comparação com API</div>
-        <div id="apiProgressText" class="meta"></div>
+    <div id="apiProgressWrap" class="card hidden api-progress">
+      <div class="api-progress__head">
+        <div class="api-progress__title">Consulta/Comparação com API</div>
+        <div class="api-progress__actions">
+          <div id="apiProgressText" class="meta"></div>
+          <button id="apiProgressCancel" class="button" type="button" onclick="cancelarConsultaApi()">Cancelar</button>
+        </div>
       </div>
-      <div style="height:10px; background:#eef2f7; border-radius:999px; overflow:hidden; margin-top:10px;">
-        <div id="apiProgressBar" style="height:10px; width:0%; background:#2563eb; transition: width 160ms ease;"></div>
+      <div class="api-progress__sub meta" id="apiProgressSub"></div>
+      <div class="progress">
+        <div class="progress__track">
+          <div id="apiProgressBar" class="progress__fill" style="width:0%;"></div>
+        </div>
       </div>
     </div>
 
     <section id="asoImportPage" class="page">
       <div class="card">
-        <div class="card__header">
-          <div>
-            <h2>Importação de ASO</h2>
-            <div class="muted">Carregue um CSV ou XLSX, revise e integre.</div>
+        <div class="import-bar import-bar--top">
+          <div class="import-bar__left">
+            <div class="muted import-hint">Carregue um CSV ou XLSX, revise e integre.</div>
           </div>
-
-          <label class="file-button">
-            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="loadFile()">
-            Selecionar arquivo
-          </label>
+          <div class="import-bar__right">
+            <label class="file-button">
+              <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="loadFile()">
+              Selecionar arquivo
+            </label>
+          </div>
         </div>
 
-        <div class="import-controls">
-          <div class="segmented" role="tablist" aria-label="Tipo de importação">
-            <button id="modeCoverBtn" class="segmented__btn active" type="button" onclick="setImportMode('capa')">Capa do ASO</button>
-            <button id="modeExamsBtn" class="segmented__btn" type="button" onclick="setImportMode('exames')">Exames</button>
+        <div class="import-bar">
+          <div class="import-bar__left">
+            <div class="segmented" role="tablist" aria-label="Tipo de importação">
+              <button id="modeCoverBtn" class="segmented__btn active" type="button" onclick="setImportMode('capa')">Capa do ASO</button>
+              <button id="modeExamsBtn" class="segmented__btn" type="button" onclick="setImportMode('exames')">Exames</button>
+            </div>
+            <input type="text" id="filtro" class="input input--search" placeholder="Buscar (texto livre)" onkeyup="onGlobalSearchChange()">
+            <div id="rowCount" class="meta"></div>
           </div>
 
-          <div style="display:flex; gap:10px; align-items:center;">
+          <div class="import-bar__right">
             <button class="button" type="button" onclick="toggleMappingPanel()">Mapeamento</button>
             <button class="button" type="button" onclick="clearAllFilters()">Limpar filtros</button>
           </div>
@@ -144,23 +153,19 @@
           </div>
         </div>
 
-        <div class="toolbar">
-          <input type="text" id="filtro" class="input" placeholder="Buscar (texto livre)" onkeyup="onGlobalSearchChange()">
-          <div id="rowCount" class="meta"></div>
-        </div>
-
         <div class="table-wrap">
           <table id="tabela" class="table">
             <thead id="tableHead"></thead>
             <tbody></tbody>
           </table>
         </div>
+
+        <div id="pagination" class="pagination hidden"></div>
       </div>
     </section>
 
     <section id="asoHistoricoPage" class="page hidden">
       <div class="card">
-        <h2>Histórico de ASO</h2>
         <div class="muted">Em construção.</div>
       </div>
     </section>
@@ -169,7 +174,6 @@
       <div class="card">
         <div class="card__header">
           <div>
-            <h2>Relatórios</h2>
             <div class="muted">Resumo da planilha importada.</div>
           </div>
         </div>
@@ -217,7 +221,6 @@
 
     <section id="vacinaPage" class="page hidden">
       <div class="card">
-        <h2>Módulo Vacinas</h2>
         <div class="muted">Em construção.</div>
       </div>
     </section>
@@ -263,8 +266,13 @@
   let apiBearerToken = sessionStorage.getItem('apiBearerToken') || '';
   let employeeCache = {};
   let employeeCacheErrors = {};
-  let consultStatus = { running: false, done: 0, total: 0 };
+  let consultStatus = { running: false, done: 0, total: 0, ok: 0, fail: 0, startedAt: 0 };
+  let consultCancelRequested = false;
+  let currentConsultAbortController = null;
+  let apiProgressTimerId = null;
   let apiDebug = { lastCpf: '', lastUrl: '', usedProxy: false, status: '', message: '' };
+  const pageSize = 100;
+  let currentListPage = 1;
   let currentPage = 'asoImport';
   const pageConfig = {
     asoImport: { title: 'Importação de ASO', canIntegrate: true },
@@ -1098,11 +1106,14 @@
 
     employeeCache = {};
     employeeCacheErrors = {};
-    consultStatus = { running: true, done: 0, total: cpfs.length };
+    consultCancelRequested = false;
+    currentConsultAbortController = null;
+    consultStatus = { running: true, done: 0, total: cpfs.length, ok: 0, fail: 0, startedAt: Date.now() };
     let okCount = 0;
     let failCount = 0;
-    updateRowCount(dados.length, getBaseRowsForMode().length);
+    rebuildAndRender(false);
     updateApiProgressUi();
+    startApiProgressTimer();
     showToast(`Consultando API (${cpfs.length} CPF(s))`, 'success');
 
     async function fetchWithFallback(targetUrl) {
@@ -1110,12 +1121,16 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
       try {
+        currentConsultAbortController = controller;
+        if (consultCancelRequested) controller.abort();
         apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: targetUrl, usedProxy: false, status: '', message: '' };
         res = await fetch(targetUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders }, signal: controller.signal });
         clearTimeout(timeoutId);
+        currentConsultAbortController = null;
         return res;
       } catch (e) {
         clearTimeout(timeoutId);
+        currentConsultAbortController = null;
         const msg = String(e?.message || '').toLowerCase();
         if (!msg.includes('failed to fetch')) throw e;
         const proxyUrl = buildProxyUrl(targetUrl);
@@ -1168,17 +1183,19 @@
     for (let i = 0; i < cpfs.length; i += batchSize) {
       const batch = cpfs.slice(i, i + batchSize);
       for (const cpf of batch) {
+        if (consultCancelRequested) break;
         try {
           const recs = await fetchRecordsForCpf(cpf);
           employeeCache[cpf] = recs;
           okCount += 1;
+          consultStatus.ok += 1;
         } catch (e) {
           employeeCache[cpf] = [];
           const msg = String(e?.message || '');
           if (msg.toLowerCase().includes('failed to fetch')) {
             employeeCacheErrors[cpf] = 'Erro API (CORS/rede) — use Proxy local';
           } else if (msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('aborterror')) {
-            employeeCacheErrors[cpf] = 'Erro API (timeout)';
+            employeeCacheErrors[cpf] = consultCancelRequested ? 'Cancelado' : 'Erro API (timeout)';
           } else if (msg.startsWith('HTTP ')) {
             employeeCacheErrors[cpf] = `Erro API (${msg})`;
           } else if (msg.toLowerCase().includes('nao filtrou por cpf')) {
@@ -1189,23 +1206,30 @@
             employeeCacheErrors[cpf] = 'Erro API';
           }
           failCount += 1;
+          consultStatus.fail += 1;
         }
         consultStatus.done += 1;
         if (consultStatus.done % 5 === 0 || consultStatus.done === consultStatus.total) {
           applyApiToAllRows();
           recomputeDerivedRowsFromAllRows();
           rebuildAndRender(false);
-          updateRowCount(dados.length, getBaseRowsForMode().length);
+          updateApiProgressUi();
         }
       }
 
+      if (consultCancelRequested) break;
       await new Promise(r => setTimeout(r, 150));
     }
 
     rebuildAndRender(true);
     consultStatus.running = false;
-    updateRowCount(dados.length, getBaseRowsForMode().length);
+    currentConsultAbortController = null;
     updateApiProgressUi();
+    stopApiProgressTimer();
+    if (consultCancelRequested) {
+      showToast('Consulta cancelada', 'error');
+      return;
+    }
     if (failCount) {
       const firstError = Object.values(employeeCacheErrors)[0] || '';
       const more = firstError ? ` • ${firstError}` : '';
@@ -1213,6 +1237,14 @@
       return;
     }
     showToast(`Comparativo atualizado • ${okCount} ok`, 'success');
+  }
+
+  function cancelarConsultaApi() {
+    if (!consultStatus?.running) return;
+    consultCancelRequested = true;
+    currentConsultAbortController?.abort?.();
+    updateApiProgressUi();
+    stopApiProgressTimer();
   }
 
   async function testarApi() {
@@ -1409,6 +1441,7 @@
     rawContext.defaultMapping = guessMapping(rawContext.headerKeys || []);
     rawContext.mapping = { ...rawContext.defaultMapping };
     buildMappingUI();
+    currentListPage = 1;
     rebuildAndRender();
   }
 
@@ -1424,6 +1457,7 @@
     });
 
     rawContext.mapping = next;
+    currentListPage = 1;
     rebuildAndRender();
     showToast('Mapeamento aplicado', 'success');
   }
@@ -1433,11 +1467,13 @@
     document.getElementById('modeCoverBtn')?.classList.toggle('active', importMode === 'capa');
     document.getElementById('modeExamsBtn')?.classList.toggle('active', importMode === 'exames');
     clearAllFilters(false);
+    currentListPage = 1;
     rebuildAndRender();
   }
 
   function onGlobalSearchChange() {
     globalSearch = document.getElementById('filtro')?.value?.toLowerCase() || '';
+    currentListPage = 1;
     rebuildAndRender(false);
   }
 
@@ -1446,6 +1482,7 @@
     if (activePopover) closePopover();
     document.querySelectorAll('.th-filter').forEach(btn => btn.classList.remove('active'));
     if (showMsg) showToast('Filtros limpos', 'success');
+    currentListPage = 1;
     rebuildAndRender(false);
   }
 
@@ -1493,6 +1530,80 @@
     coverRows = buildCoverRows(allRows);
   }
 
+  function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getTotalPages(totalItems) {
+    const total = Number(totalItems || 0);
+    if (!total) return 1;
+    return Math.max(1, Math.ceil(total / pageSize));
+  }
+
+  function setListPage(page) {
+    const totalPages = getTotalPages(dados.length);
+    currentListPage = clampNumber(Number(page || 1), 1, totalPages);
+    rebuildAndRender(false);
+  }
+
+  function renderPagination(totalItems) {
+    const el = document.getElementById('pagination');
+    if (!el) return;
+
+    const totalPages = getTotalPages(totalItems);
+    if (totalPages <= 1) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      return;
+    }
+
+    el.classList.remove('hidden');
+    el.innerHTML = '';
+
+    const current = clampNumber(currentListPage, 1, totalPages);
+    currentListPage = current;
+
+    const makeBtn = (label, page, disabled, active) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pagination__btn';
+      if (active) b.classList.add('active');
+      b.disabled = Boolean(disabled);
+      b.textContent = label;
+      b.onclick = () => setListPage(page);
+      return b;
+    };
+
+    el.appendChild(makeBtn('<', current - 1, current <= 1, false));
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(totalPages, start + 4);
+    start = Math.max(1, end - 4);
+
+    el.appendChild(makeBtn('1', 1, false, current === 1));
+    if (start > 2) {
+      const dots = document.createElement('span');
+      dots.className = 'pagination__dots';
+      dots.textContent = '...';
+      el.appendChild(dots);
+    }
+
+    for (let p = start; p <= end; p++) {
+      if (p === 1 || p === totalPages) continue;
+      el.appendChild(makeBtn(String(p), p, false, p === current));
+    }
+
+    if (end < totalPages - 1) {
+      const dots = document.createElement('span');
+      dots.className = 'pagination__dots';
+      dots.textContent = '...';
+      el.appendChild(dots);
+    }
+    el.appendChild(makeBtn(String(totalPages), totalPages, false, current === totalPages));
+
+    el.appendChild(makeBtn('>', current + 1, current >= totalPages, false));
+  }
+
   function rebuildAndRender(recompute = true) {
     if (recompute) {
       allRows = buildDetailRows();
@@ -1506,10 +1617,15 @@
     const finalRows = applyGlobalSearch(withColumnFilters, columns);
 
     dados = finalRows;
-    renderTable(columns, finalRows);
+    const totalPages = getTotalPages(finalRows.length);
+    currentListPage = clampNumber(currentListPage, 1, totalPages);
+    const start = (currentListPage - 1) * pageSize;
+    const visibleRows = finalRows.slice(start, start + pageSize);
 
-    const total = base.length;
-    updateRowCount(finalRows.length, total);
+    renderTable(columns, visibleRows);
+    renderPagination(finalRows.length);
+
+    updateRowCount(visibleRows.length, finalRows.length);
     updateIntegrateButton();
     renderAsoRelatorios();
   }
@@ -1652,6 +1768,7 @@
       current.clear();
       allValues.forEach(v => current.add(v));
       delete columnFilters[key];
+      currentListPage = 1;
       rebuildAndRender(false);
       closePopover();
     };
@@ -1666,6 +1783,7 @@
       } else {
         columnFilters[key] = new Set(current);
       }
+      currentListPage = 1;
       rebuildAndRender(false);
       closePopover();
     };
@@ -1762,6 +1880,7 @@
         if (!rawContext) throw new Error('Arquivo vazio ou inválido');
 
         buildMappingUI();
+        currentListPage = 1;
         rebuildAndRender(true);
         showToast('Arquivo carregado com sucesso', 'success');
       } catch (err) {
@@ -1770,6 +1889,7 @@
         detailRows = [];
         coverRows = [];
         renderTable(columnsByMode[importMode], dados);
+        renderPagination(0);
         updateRowCount(0, 0);
         updateIntegrateButton();
         showToast(err?.message || 'Falha ao ler o arquivo', 'error');
@@ -1846,10 +1966,13 @@
     const wrap = document.getElementById('apiProgressWrap');
     const bar = document.getElementById('apiProgressBar');
     const text = document.getElementById('apiProgressText');
-    if (!wrap || !bar || !text) return;
+    const sub = document.getElementById('apiProgressSub');
+    const cancelBtn = document.getElementById('apiProgressCancel');
+    if (!wrap || !bar || !text || !sub || !cancelBtn) return;
 
     if (!consultStatus?.running) {
       wrap.classList.add('hidden');
+      stopApiProgressTimer();
       return;
     }
 
@@ -1858,7 +1981,36 @@
     const done = Math.min(total, Number(consultStatus.done || 0));
     const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
     bar.style.width = `${pct}%`;
-    text.innerText = `${done}/${total} • ${pct}%`;
+    text.innerText = `${pct}%`;
+
+    const ok = Number(consultStatus.ok || 0);
+    const fail = Number(consultStatus.fail || 0);
+    const startedAt = Number(consultStatus.startedAt || 0);
+    const elapsedMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
+    const elapsedSec = Math.floor(elapsedMs / 1000);
+    const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+    const ss = String(elapsedSec % 60).padStart(2, '0');
+    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail} • tempo ${mm}:${ss}`;
+
+    cancelBtn.disabled = consultCancelRequested;
+    wrap.classList.toggle('api-progress--canceling', consultCancelRequested);
+  }
+
+  function startApiProgressTimer() {
+    if (apiProgressTimerId) return;
+    apiProgressTimerId = setInterval(() => {
+      if (!consultStatus?.running) {
+        stopApiProgressTimer();
+        return;
+      }
+      updateApiProgressUi();
+    }, 1000);
+  }
+
+  function stopApiProgressTimer() {
+    if (!apiProgressTimerId) return;
+    clearInterval(apiProgressTimerId);
+    apiProgressTimerId = null;
   }
 
   applyModuleState();
