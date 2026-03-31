@@ -1,5 +1,7 @@
 const http = require('http');
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const { URL } = require('url');
 
 function send(res, status, headers, body) {
@@ -38,6 +40,113 @@ async function handler(req, res) {
   }
 
   const reqUrl = new URL(req.url, 'http://localhost');
+  if (reqUrl.pathname === '/health') {
+    send(
+      res,
+      200,
+      {
+        'Access-Control-Allow-Origin': origin,
+        'Content-Type': 'application/json'
+      },
+      JSON.stringify({ ok: true })
+    );
+    return;
+  }
+
+  if (reqUrl.pathname === '/history/list') {
+    try {
+      const dir = path.join(process.cwd(), 'historico');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const files = fs.readdirSync(dir)
+        .filter((f) => f.toLowerCase().endsWith('.xlsx'))
+        .map((f) => {
+          const p = path.join(dir, f);
+          const st = fs.statSync(p);
+          return { fileName: f, mtimeMs: st.mtimeMs, size: st.size };
+        })
+        .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+      send(
+        res,
+        200,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ ok: true, files })
+      );
+    } catch {
+      send(
+        res,
+        500,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ ok: false, error: 'Failed to list history' })
+      );
+    }
+    return;
+  }
+
+  if (reqUrl.pathname === '/save') {
+    if ((req.method || '').toUpperCase() !== 'POST') {
+      send(
+        res,
+        405,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ ok: false, error: 'Method not allowed' })
+      );
+      return;
+    }
+
+    try {
+      const bodyBuffer = await new Promise((resolve, reject) => {
+        const chunks = [];
+        req.on('data', (c) => chunks.push(c));
+        req.on('end', () => resolve(Buffer.concat(chunks)));
+        req.on('error', reject);
+      });
+
+      const json = JSON.parse(bodyBuffer.toString('utf8') || '{}');
+      const rawName = String(json.fileName || '');
+      const base64 = String(json.base64 || '');
+      const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = safeName.toLowerCase().endsWith('.xlsx') ? safeName : `${safeName}.xlsx`;
+      if (!fileName || fileName.length > 180) throw new Error('Invalid fileName');
+      if (!base64) throw new Error('Missing base64');
+
+      const bytes = Buffer.from(base64, 'base64');
+      const dir = path.join(process.cwd(), 'historico');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const filePath = path.join(dir, fileName);
+      fs.writeFileSync(filePath, bytes);
+
+      send(
+        res,
+        200,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ ok: true, fileName, filePath })
+      );
+    } catch {
+      send(
+        res,
+        500,
+        {
+          'Access-Control-Allow-Origin': origin,
+          'Content-Type': 'application/json'
+        },
+        JSON.stringify({ ok: false, error: 'Failed to save file' })
+      );
+    }
+    return;
+  }
   if (reqUrl.pathname !== '/proxy') {
     send(
       res,

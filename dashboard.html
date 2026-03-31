@@ -25,6 +25,7 @@
           <button class="nav-item active" type="button" data-page="asoImport" onclick="showPage('asoImport')">Importação</button>
           <button class="nav-item" type="button" data-page="asoHistorico" onclick="showPage('asoHistorico')">Histórico</button>
           <button class="nav-item" type="button" data-page="asoRelatorios" onclick="showPage('asoRelatorios')">Relatórios</button>
+          <button class="nav-item" type="button" data-page="asoAcompanhamento" onclick="showPage('asoAcompanhamento')">Acompanhamento</button>
         </div>
       </div>
 
@@ -59,10 +60,10 @@
 
     <div id="apiProgressWrap" class="card hidden api-progress">
       <div class="api-progress__head">
-        <div class="api-progress__title">Consulta/Comparação com API</div>
+        <div id="apiProgressTitle" class="api-progress__title">Processo</div>
         <div class="api-progress__actions">
           <div id="apiProgressText" class="meta"></div>
-          <button id="apiProgressCancel" class="button" type="button" onclick="cancelarConsultaApi()">Cancelar</button>
+          <button id="apiProgressCancel" class="button" type="button" onclick="cancelarProcessoAtual()">Cancelar</button>
         </div>
       </div>
       <div class="api-progress__sub meta" id="apiProgressSub"></div>
@@ -166,7 +167,82 @@
 
     <section id="asoHistoricoPage" class="page hidden">
       <div class="card">
-        <div class="muted">Em construção.</div>
+        <div class="import-bar import-bar--top">
+          <div class="import-bar__left">
+            <div class="muted import-hint">Histórico de processos (comparação e integrações).</div>
+          </div>
+          <div class="import-bar__right">
+            <button class="button" type="button" onclick="clearHistoryRuns()">Limpar histórico</button>
+            <button class="button" type="button" onclick="refreshHistoryFiles()">Atualizar pasta</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__label">Registros</div>
+            <div id="histCount" class="stat-card__value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Último usuário</div>
+            <div id="histUser" class="stat-card__value">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Último processo</div>
+            <div id="histLast" class="stat-card__value">-</div>
+          </div>
+        </div>
+
+        <div class="monitor-card" style="margin-top:12px;">
+          <div class="monitor-card__head">
+            <div class="monitor-card__title">Processos</div>
+            <div class="monitor-actions">
+              <select id="histFilter" class="select" onchange="renderHistorico()">
+                <option value="all">Todos</option>
+                <option value="comparacao">Comparação</option>
+                <option value="capa">Capa</option>
+                <option value="exames">Exames</option>
+              </select>
+              <input id="histSearch" class="input input--search" placeholder="Buscar..." onkeyup="renderHistorico()">
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Tipo</th>
+                  <th>Arquivo</th>
+                  <th>Usuário</th>
+                  <th>Total</th>
+                  <th>Ok</th>
+                  <th>Falhas</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="histBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="monitor-card" style="margin-top:12px;">
+          <div class="monitor-card__head">
+            <div class="monitor-card__title">Arquivos na pasta (proxy)</div>
+            <div id="histFolderStatus" class="meta"></div>
+          </div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Arquivo</th>
+                  <th>Tamanho</th>
+                  <th>Modificado</th>
+                </tr>
+              </thead>
+              <tbody id="histFilesBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -214,6 +290,86 @@
             <div class="report-bar__track">
               <div id="reportInaptoFill" class="report-bar__fill report-bar__fill--danger" style="width:0%;"></div>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="asoAcompanhamentoPage" class="page hidden">
+      <div class="card">
+        <div class="import-bar import-bar--top">
+          <div class="import-bar__left">
+            <div class="muted import-hint">Painel de acompanhamento da comparação e integrações.</div>
+          </div>
+          <div class="import-bar__right">
+            <button class="button" type="button" onclick="clearMonitorErrors()">Limpar erros</button>
+            <button class="button" type="button" onclick="downloadLastRunXlsx()">Baixar XLSX</button>
+            <button class="button" type="button" onclick="downloadMonitorErrors()">Baixar CSV</button>
+          </div>
+        </div>
+
+        <div class="monitor-grid">
+          <div class="monitor-card">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Processo atual</div>
+              <div id="monCurrentStatus" class="meta"></div>
+            </div>
+            <div class="progress">
+              <div class="progress__track">
+                <div id="monCurrentBar" class="progress__fill" style="width:0%;"></div>
+              </div>
+            </div>
+            <div id="monCurrentSub" class="meta" style="margin-top:8px;"></div>
+          </div>
+
+          <div class="monitor-card">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Resumo</div>
+              <div class="meta">Sessão atual</div>
+            </div>
+            <div class="stats-grid" style="padding-top:10px;">
+              <div class="stat-card">
+                <div class="stat-card__label">Comparação</div>
+                <div id="monSumCompare" class="stat-card__value">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card__label">Capa (ok/falhas)</div>
+                <div id="monSumCapa" class="stat-card__value">0/0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card__label">Exames (ok/falhas)</div>
+                <div id="monSumExames" class="stat-card__value">0/0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="monitor-card" style="margin-top:12px;">
+          <div class="monitor-card__head">
+            <div class="monitor-card__title">Erros</div>
+            <div class="monitor-actions">
+              <select id="monErrorFilter" class="select" onchange="renderMonitorPanel()">
+                <option value="all">Todos</option>
+                <option value="comparacao">Comparação</option>
+                <option value="capa">Capa</option>
+                <option value="exames">Exames</option>
+              </select>
+              <input id="monErrorSearch" class="input input--search" placeholder="Buscar erro..." onkeyup="renderMonitorPanel()">
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Tipo</th>
+                  <th>Chave</th>
+                  <th>Mensagem</th>
+                </tr>
+              </thead>
+              <tbody id="monErrorBody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -271,9 +427,46 @@
   let currentConsultAbortController = null;
   let apiProgressTimerId = null;
   let apiDebug = { lastCpf: '', lastUrl: '', usedProxy: false, status: '', message: '' };
+  let integrateStatus = { running: false, phase: '', done: 0, total: 0, ok: 0, fail: 0, startedAt: 0 };
+  let integrateCancelRequested = false;
+  let currentIntegrateAbortController = null;
+  let monitorSummary = (() => {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem('monitorSummary') || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  })();
+  let monitorErrors = (() => {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem('monitorErrors') || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+  let integrationComparativoByKey = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('integrationComparativoByKey') || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  })();
+  let historyRuns = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('erpAsoHistoryRuns') || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+  let activeRun = null;
+  let lastRunId = localStorage.getItem('erpAsoLastRunId') || '';
   let idConsultaByKey = (() => {
     try {
-      const parsed = JSON.parse(sessionStorage.getItem('idConsultaByKey') || '{}');
+      const parsed = JSON.parse(sessionStorage.getItem('idConsultaByKey') || localStorage.getItem('idConsultaByKey') || '{}');
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch {
       return {};
@@ -286,6 +479,7 @@
     asoImport: { title: 'Importação de ASO', canIntegrate: true },
     asoHistorico: { title: 'Histórico de ASO', canIntegrate: false },
     asoRelatorios: { title: 'Relatórios', canIntegrate: false },
+    asoAcompanhamento: { title: 'Acompanhamento', canIntegrate: false },
     vacina: { title: 'Vacinas', canIntegrate: false }
   };
 
@@ -307,6 +501,8 @@
 
     closeSidebar();
     renderAsoRelatorios();
+    renderMonitorPanel();
+    renderHistorico();
   }
 
   function logout() {
@@ -315,6 +511,461 @@
     sessionStorage.removeItem('apiPass');
     sessionStorage.removeItem('apiBearerToken');
     window.location.href = 'login.html';
+  }
+
+  function persistMonitor() {
+    sessionStorage.setItem('monitorErrors', JSON.stringify(monitorErrors || []));
+    sessionStorage.setItem('monitorSummary', JSON.stringify(monitorSummary || {}));
+  }
+
+  function formatDateTime(ts) {
+    const d = new Date(Number(ts || 0) || Date.now());
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+  }
+
+  function pushMonitorError(tipo, chave, mensagem) {
+    monitorErrors.unshift({
+      ts: Date.now(),
+      tipo: String(tipo || ''),
+      chave: String(chave || ''),
+      mensagem: String(mensagem || ''),
+      runId: String(activeRun?.id || ''),
+      user: String(activeRun?.user || apiUser || '')
+    });
+    monitorErrors = monitorErrors.slice(0, 800);
+    persistMonitor();
+    renderMonitorPanel();
+  }
+
+  function clearMonitorErrors() {
+    monitorErrors = [];
+    persistMonitor();
+    renderMonitorPanel();
+    showToast('Erros limpos', 'success');
+  }
+
+  function downloadMonitorErrors() {
+    const rows = monitorErrors.slice().reverse();
+    const header = ['data_hora', 'tipo', 'chave', 'mensagem'];
+    const csv = [header.join(';')]
+      .concat(
+        rows.map(r => {
+          const cols = [
+            formatDateTime(r.ts),
+            r.tipo,
+            r.chave,
+            String(r.mensagem || '').replace(/\r?\n/g, ' ')
+          ];
+          return cols.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
+        })
+      )
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `erp-aso-erros-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function renderMonitorPanel() {
+    const statusEl = document.getElementById('monCurrentStatus');
+    const barEl = document.getElementById('monCurrentBar');
+    const subEl = document.getElementById('monCurrentSub');
+    const sumCompareEl = document.getElementById('monSumCompare');
+    const sumCapaEl = document.getElementById('monSumCapa');
+    const sumExamesEl = document.getElementById('monSumExames');
+    const bodyEl = document.getElementById('monErrorBody');
+    if (!statusEl || !barEl || !subEl || !sumCompareEl || !sumCapaEl || !sumExamesEl || !bodyEl) return;
+
+    const compare = monitorSummary?.comparacao || { total: 0, ok: 0, fail: 0 };
+    const capa = monitorSummary?.capa || { total: 0, ok: 0, fail: 0 };
+    const exames = monitorSummary?.exames || { total: 0, ok: 0, fail: 0 };
+
+    sumCompareEl.innerText = `${compare.ok || 0}/${compare.total || 0}`;
+    sumCapaEl.innerText = `${capa.ok || 0}/${capa.fail || 0}`;
+    sumExamesEl.innerText = `${exames.ok || 0}/${exames.fail || 0}`;
+
+    const active =
+      consultStatus?.running
+        ? { label: 'Comparação', ...consultStatus }
+        : integrateStatus?.running
+          ? { label: integrateStatus.phase === 'exames' ? 'Integração Exames' : 'Integração Capa', ...integrateStatus }
+          : null;
+
+    if (!active) {
+      statusEl.innerText = 'Parado';
+      barEl.style.width = '0%';
+      subEl.innerText = '';
+    } else {
+      const total = Math.max(1, Number(active.total || 1));
+      const done = Math.min(total, Number(active.done || 0));
+      const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+      statusEl.innerText = `${active.label} • ${pct}%`;
+      barEl.style.width = `${pct}%`;
+      const startedAt = Number(active.startedAt || 0);
+      const elapsedMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+      const ss = String(elapsedSec % 60).padStart(2, '0');
+      subEl.innerText = `${done}/${total} • ok ${Number(active.ok || 0)} • falhas ${Number(active.fail || 0)} • tempo ${mm}:${ss}`;
+    }
+
+    const filter = document.getElementById('monErrorFilter')?.value || 'all';
+    const term = (document.getElementById('monErrorSearch')?.value || '').toLowerCase();
+    const filtered = monitorErrors.filter(e => {
+      if (filter !== 'all' && e.tipo !== filter) return false;
+      if (!term) return true;
+      return `${e.tipo} ${e.chave} ${e.mensagem}`.toLowerCase().includes(term);
+    });
+
+    const limited = filtered.slice(0, 200);
+    bodyEl.innerHTML = '';
+    limited.forEach(e => {
+      const tr = document.createElement('tr');
+      const cols = [formatDateTime(e.ts), e.tipo, e.chave, e.mensagem];
+      cols.forEach(v => {
+        const td = document.createElement('td');
+        td.textContent = String(v || '');
+        tr.appendChild(td);
+      });
+      bodyEl.appendChild(tr);
+    });
+  }
+
+  function persistHistoryRuns() {
+    localStorage.setItem('erpAsoHistoryRuns', JSON.stringify(historyRuns || []));
+    localStorage.setItem('erpAsoLastRunId', String(lastRunId || ''));
+  }
+
+  function persistIntegrationComparativoByKey() {
+    localStorage.setItem('integrationComparativoByKey', JSON.stringify(integrationComparativoByKey || {}));
+  }
+
+  function openErpAsoDb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('erpAso', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbSet(key, value) {
+    const db = await openErpAsoDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function idbGet(key) {
+    const db = await openErpAsoDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readonly');
+      const req = tx.objectStore('kv').get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveLastContext() {
+    if (!rawContext) return;
+    const toSave = {
+      fileName: rawContext.fileName || '',
+      headerRow: rawContext.headerRow || [],
+      headerKeys: rawContext.headerKeys || [],
+      rawRows: rawContext.rawRows || [],
+      mapping: rawContext.mapping || {},
+      defaultMapping: rawContext.defaultMapping || {}
+    };
+    await idbSet('lastContext', toSave);
+  }
+
+  async function restoreLastContext() {
+    if (rawContext) return;
+    try {
+      const saved = await idbGet('lastContext');
+      if (!saved || !Array.isArray(saved.rawRows) || !Array.isArray(saved.headerKeys)) return;
+      rawContext = saved;
+      buildMappingUI();
+      currentListPage = 1;
+      rebuildAndRender(true);
+      showToast('Planilha restaurada', 'success');
+    } catch {
+      return;
+    }
+  }
+
+  function getCurrentUser() {
+    return String(apiUser || 'desconhecido');
+  }
+
+  function getCurrentFileName() {
+    const fromCtx = rawContext?.fileName || '';
+    if (fromCtx) return String(fromCtx);
+    const input = document.getElementById('fileInput');
+    const name = input?.files?.[0]?.name || '';
+    return String(name || '');
+  }
+
+  function newRunId() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
+
+  function startHistoryRun(kind, total) {
+    activeRun = {
+      id: newRunId(),
+      kind: String(kind || ''),
+      startedAt: Date.now(),
+      user: getCurrentUser(),
+      fileName: getCurrentFileName(),
+      total: Number(total || 0)
+    };
+    persistHistoryRuns();
+  }
+
+  function finishHistoryRun(ok, fail, extra = {}) {
+    if (!activeRun) return;
+    const runId = activeRun.id;
+    const errors = monitorErrors.filter(e => e.runId === runId);
+    const run = {
+      ...activeRun,
+      finishedAt: Date.now(),
+      ok: Number(ok || 0),
+      fail: Number(fail || 0),
+      errors,
+      ...extra
+    };
+    lastRunId = run.id;
+    historyRuns.unshift(run);
+    historyRuns = historyRuns.slice(0, 80);
+    persistHistoryRuns();
+    renderHistorico();
+    saveRunXlsx(run).catch(() => {});
+    activeRun = null;
+  }
+
+  function createRunWorkbook(run) {
+    const wb = XLSX.utils.book_new();
+
+    const summaryRows = [
+      ['Sistema', 'ERP ASO'],
+      ['Processo', run.kind || ''],
+      ['Usuário', run.user || ''],
+      ['Arquivo', run.fileName || ''],
+      ['Início', formatDateTime(run.startedAt)],
+      ['Fim', formatDateTime(run.finishedAt)],
+      ['Total', String(run.total ?? '')],
+      ['Ok', String(run.ok ?? '')],
+      ['Falhas', String(run.fail ?? '')]
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+    const errRows = (run.errors || []).map(e => ({
+      data_hora: formatDateTime(e.ts),
+      tipo: e.tipo,
+      chave: e.chave,
+      mensagem: e.mensagem
+    }));
+    const wsErr = XLSX.utils.json_to_sheet(errRows);
+    XLSX.utils.book_append_sheet(wb, wsErr, 'Erros');
+
+    return wb;
+  }
+
+  function buildRunFileName(run) {
+    const d = new Date(run.finishedAt || Date.now());
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    const user = String(run.user || '').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 24) || 'user';
+    const kind = String(run.kind || '').replace(/[^a-zA-Z0-9._-]/g, '_') || 'processo';
+    return `ERP-ASO_${kind}_${yyyy}-${mm}-${dd}_${hh}${mi}${ss}_${user}.xlsx`;
+  }
+
+  function uint8ToBase64(u8) {
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < u8.length; i += chunk) {
+      const sub = u8.subarray(i, i + chunk);
+      binary += String.fromCharCode.apply(null, sub);
+    }
+    return btoa(binary);
+  }
+
+  async function saveWorkbookToProxy(fileName, wb) {
+    await ensureProxyRunning();
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const base64 = uint8ToBase64(new Uint8Array(out));
+    const proxyOrigin = new URL(apiProxyBaseUrl).origin;
+    const res = await fetch(`${proxyOrigin}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ fileName, base64 })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok) throw new Error('Falha ao salvar no proxy');
+    return json;
+  }
+
+  async function saveRunXlsx(run) {
+    const wb = createRunWorkbook(run);
+    const fileName = buildRunFileName(run);
+    try {
+      const saved = await saveWorkbookToProxy(fileName, wb);
+      run.savedFile = saved.fileName || fileName;
+      run.savedPath = saved.filePath || '';
+      persistHistoryRuns();
+      showToast('Relatório salvo em historico/', 'success');
+      return;
+    } catch {
+      XLSX.writeFile(wb, fileName);
+      showToast('Relatório baixado (Downloads)', 'success');
+    }
+  }
+
+  function downloadRunXlsx(runId) {
+    const run = historyRuns.find(r => r.id === runId);
+    if (!run) return;
+    const wb = createRunWorkbook(run);
+    XLSX.writeFile(wb, buildRunFileName(run));
+  }
+
+  function downloadLastRunXlsx() {
+    const id = lastRunId || '';
+    if (!id) {
+      showToast('Nenhum processo no histórico', 'error');
+      return;
+    }
+    downloadRunXlsx(id);
+  }
+
+  function clearHistoryRuns() {
+    historyRuns = [];
+    localStorage.removeItem('erpAsoHistoryRuns');
+    localStorage.removeItem('erpAsoLastRunId');
+    renderHistorico();
+    showToast('Histórico limpo', 'success');
+  }
+
+  async function refreshHistoryFiles() {
+    const statusEl = document.getElementById('histFolderStatus');
+    const bodyEl = document.getElementById('histFilesBody');
+    if (!statusEl || !bodyEl) return;
+    statusEl.innerText = '';
+    bodyEl.innerHTML = '';
+    try {
+      await ensureProxyRunning();
+      const proxyOrigin = new URL(apiProxyBaseUrl).origin;
+      const res = await fetch(`${proxyOrigin}/history/list`, { method: 'GET', headers: { Accept: 'application/json' } });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error('Falha ao listar');
+      const files = Array.isArray(json.files) ? json.files : [];
+      statusEl.innerText = `${files.length} arquivo(s)`;
+      files.slice(0, 50).forEach(f => {
+        const tr = document.createElement('tr');
+        const sizeKb = `${Math.round((Number(f.size || 0) / 1024) * 10) / 10} KB`;
+        const cols = [f.fileName, sizeKb, formatDateTime(f.mtimeMs)];
+        cols.forEach(v => {
+          const td = document.createElement('td');
+          td.textContent = String(v || '');
+          tr.appendChild(td);
+        });
+        bodyEl.appendChild(tr);
+      });
+    } catch (e) {
+      statusEl.innerText = String(e?.message || 'Proxy indisponível');
+    }
+  }
+
+  function renderHistorico() {
+    const countEl = document.getElementById('histCount');
+    const userEl = document.getElementById('histUser');
+    const lastEl = document.getElementById('histLast');
+    const bodyEl = document.getElementById('histBody');
+    if (!countEl || !userEl || !lastEl || !bodyEl) return;
+
+    countEl.innerText = String(historyRuns.length);
+    const first = historyRuns[0] || null;
+    userEl.innerText = first?.user ? String(first.user) : '-';
+    lastEl.innerText = first?.kind ? String(first.kind) : '-';
+
+    const filter = document.getElementById('histFilter')?.value || 'all';
+    const term = (document.getElementById('histSearch')?.value || '').toLowerCase();
+    const filtered = historyRuns.filter(r => {
+      if (filter !== 'all' && r.kind !== filter) return false;
+      if (!term) return true;
+      const t = `${r.kind} ${r.user} ${r.fileName} ${r.savedFile || ''} ${r.savedPath || ''}`.toLowerCase();
+      return t.includes(term);
+    });
+
+    bodyEl.innerHTML = '';
+    filtered.slice(0, 80).forEach(r => {
+      const tr = document.createElement('tr');
+      const cols = [
+        formatDateTime(r.finishedAt || r.startedAt),
+        r.kind,
+        r.fileName || '-',
+        r.user || '-',
+        String(r.total ?? ''),
+        String(r.ok ?? ''),
+        String(r.fail ?? ''),
+        ''
+      ];
+      cols.slice(0, 7).forEach(v => {
+        const td = document.createElement('td');
+        td.textContent = String(v || '');
+        tr.appendChild(td);
+      });
+
+      const tdAct = document.createElement('td');
+      tdAct.style.whiteSpace = 'nowrap';
+
+      const btnXlsx = document.createElement('button');
+      btnXlsx.type = 'button';
+      btnXlsx.className = 'button';
+      btnXlsx.textContent = 'XLSX';
+      btnXlsx.onclick = () => downloadRunXlsx(r.id);
+
+      const btnErr = document.createElement('button');
+      btnErr.type = 'button';
+      btnErr.className = 'button';
+      btnErr.textContent = 'Ver erros';
+      btnErr.onclick = () => {
+        monitorErrors = Array.isArray(r.errors) ? r.errors : [];
+        monitorSummary = { ...(monitorSummary || {}) };
+        persistMonitor();
+        showPage('asoAcompanhamento');
+        renderMonitorPanel();
+      };
+
+      tdAct.appendChild(btnXlsx);
+      tdAct.appendChild(document.createTextNode(' '));
+      tdAct.appendChild(btnErr);
+      tr.appendChild(tdAct);
+
+      bodyEl.appendChild(tr);
+    });
   }
 
   function toggleModule(moduleKey) {
@@ -586,7 +1237,20 @@
     obj.matriculaApi = '';
     obj.comparativo = '';
     obj.blocked = false;
-    applyEmployeeInfoToMappedRow(obj);
+    obj.idConsulta = '';
+
+    const coverKey = buildCoverKey(obj);
+    const savedId = idConsultaByKey?.[coverKey];
+    if (savedId) obj.idConsulta = String(savedId);
+
+    const compCover = integrationComparativoByKey?.[coverKey];
+    if (compCover && isCoverRow(obj)) {
+      obj.comparativo = String(compCover);
+    } else {
+      const examKey = buildExamKey(obj);
+      const compExam = integrationComparativoByKey?.[examKey];
+      if (compExam) obj.comparativo = String(compExam);
+    }
     return obj;
   }
 
@@ -620,8 +1284,16 @@
     ].join('|');
   }
 
+  function buildExamKey(obj) {
+    const coverKey = buildCoverKey(obj);
+    const codExame = normalizeCell(obj?.codigoExame || '');
+    const dt = formatDateTimeForRmExam(obj?.dataResExame || obj?.dataFicha || '');
+    return `${coverKey}|${codExame}|${dt}`;
+  }
+
   function persistIdConsultaByKey() {
     sessionStorage.setItem('idConsultaByKey', JSON.stringify(idConsultaByKey || {}));
+    localStorage.setItem('idConsultaByKey', JSON.stringify(idConsultaByKey || {}));
   }
 
   function classifyParecerAso(value) {
@@ -967,9 +1639,12 @@
     const cpf = cpfDigits(obj.cpf);
     if (!cpf) return;
 
+    const compKey = normalizeHeaderKey(obj.comparativo);
+    const keepComparativo = compKey.includes('integr');
+
     const err = employeeCacheErrors[cpf];
     if (err) {
-      obj.comparativo = err;
+      if (!keepComparativo) obj.comparativo = err;
       return;
     }
 
@@ -977,7 +1652,7 @@
     if (!Array.isArray(records)) return;
 
     if (records.length === 0) {
-      obj.comparativo = 'Sem retorno API';
+      if (!keepComparativo) obj.comparativo = 'Sem retorno API';
       return;
     }
 
@@ -988,22 +1663,22 @@
     const tipo = normalizeTipoExame(obj.tipoExame);
     if (tipo.includes('periodico') && obj.situacao === 'D') {
       obj.blocked = true;
-      obj.comparativo = 'Ignorado (Periódico + D)';
+      if (!keepComparativo) obj.comparativo = 'Ignorado (Periódico + D)';
       return;
     }
 
     const hasMismatch = obj.matriculaApi && obj.matricula && normalizeCell(obj.matriculaApi) !== normalizeCell(obj.matricula);
     if (hasMismatch) {
-      obj.comparativo = 'Matrícula ajustada';
+      if (!keepComparativo) obj.comparativo = 'Matrícula ajustada';
       return;
     }
 
     if (obj.situacao === 'D') {
-      obj.comparativo = 'Situação D';
+      if (!keepComparativo) obj.comparativo = 'Situação D';
       return;
     }
 
-    obj.comparativo = 'OK';
+    if (!keepComparativo) obj.comparativo = 'OK';
   }
 
   function loadApiBaseUrlToUI() {
@@ -1130,6 +1805,7 @@
     consultCancelRequested = false;
     currentConsultAbortController = null;
     consultStatus = { running: true, done: 0, total: cpfs.length, ok: 0, fail: 0, startedAt: Date.now() };
+    startHistoryRun('comparacao', cpfs.length);
     let okCount = 0;
     let failCount = 0;
     rebuildAndRender(false);
@@ -1226,6 +1902,7 @@
           } else {
             employeeCacheErrors[cpf] = 'Erro API';
           }
+          pushMonitorError('comparacao', cpf, employeeCacheErrors[cpf]);
           failCount += 1;
           consultStatus.fail += 1;
         }
@@ -1248,9 +1925,16 @@
     updateApiProgressUi();
     stopApiProgressTimer();
     if (consultCancelRequested) {
+      finishHistoryRun(okCount, failCount, { canceled: true });
       showToast('Consulta cancelada', 'error');
       return;
     }
+
+    monitorSummary.comparacao = { total: cpfs.length, ok: okCount, fail: failCount };
+    persistMonitor();
+    renderMonitorPanel();
+    finishHistoryRun(okCount, failCount);
+
     if (failCount) {
       const firstError = Object.values(employeeCacheErrors)[0] || '';
       const more = firstError ? ` • ${firstError}` : '';
@@ -1266,6 +1950,34 @@
     currentConsultAbortController?.abort?.();
     updateApiProgressUi();
     stopApiProgressTimer();
+  }
+
+  function cancelarIntegracao() {
+    if (!integrateStatus?.running) return;
+    integrateCancelRequested = true;
+    currentIntegrateAbortController?.abort?.();
+    updateApiProgressUi();
+    stopApiProgressTimer();
+  }
+
+  function cancelarProcessoAtual() {
+    if (consultStatus?.running) {
+      cancelarConsultaApi();
+      return;
+    }
+    if (integrateStatus?.running) {
+      cancelarIntegracao();
+    }
+  }
+
+  function finalizeIntegracaoWithError(message) {
+    if (integrateStatus?.running) integrateStatus.running = false;
+    currentIntegrateAbortController = null;
+    integrateCancelRequested = false;
+    stopApiProgressTimer();
+    updateApiProgressUi();
+    pushMonitorError(integrateStatus?.phase || 'integracao', 'geral', String(message || 'Falha na integração'));
+    finishHistoryRun(Number(integrateStatus?.ok || 0), Number(integrateStatus?.fail || 0), { crashed: true });
   }
 
   async function testarApi() {
@@ -1479,6 +2191,7 @@
     buildMappingUI();
     currentListPage = 1;
     rebuildAndRender();
+    void saveLastContext();
   }
 
   function applyMapping() {
@@ -1495,6 +2208,7 @@
     rawContext.mapping = next;
     currentListPage = 1;
     rebuildAndRender();
+    void saveLastContext();
     showToast('Mapeamento aplicado', 'success');
   }
 
@@ -1555,7 +2269,6 @@
     allRows.forEach(r => {
       r.situacao = '';
       r.matriculaApi = '';
-      r.comparativo = '';
       r.blocked = false;
       applyEmployeeInfoToMappedRow(r);
     });
@@ -1669,7 +2382,17 @@
   function updateIntegrateButton() {
     const btn = document.getElementById('integrarBtn');
     if (!btn) return;
-    btn.disabled = dados.length === 0 || (importMode === 'exames' && !coverIntegrated);
+    if (importMode === 'capa') {
+      btn.disabled = dados.length === 0;
+    } else {
+      const eligible = detailRows.some(r => {
+        if (r.blocked) return false;
+        const key = buildCoverKey(r);
+        const idConsulta = Number(idConsultaByKey[key] || r.idConsulta || 0);
+        return Number.isFinite(idConsulta) && idConsulta > 0;
+      });
+      btn.disabled = !eligible;
+    }
     btn.innerText = importMode === 'capa' ? 'Integrar Capa (parte 1)' : 'Integrar Exames (parte 2)';
   }
 
@@ -1914,10 +2637,12 @@
         }
 
         if (!rawContext) throw new Error('Arquivo vazio ou inválido');
+        rawContext.fileName = file.name;
 
         buildMappingUI();
         currentListPage = 1;
         rebuildAndRender(true);
+        void saveLastContext();
         showToast('Arquivo carregado com sucesso', 'success');
       } catch (err) {
         rawContext = null;
@@ -1960,6 +2685,31 @@
     return `${u.origin}/RMSRestDataServer/rest/SmtConsultasProntData`;
   }
 
+  function buildProxyHealthUrl() {
+    const base = String(apiProxyBaseUrl || '').trim();
+    if (!base) return '';
+    try {
+      const u = new URL(base, window.location.origin);
+      u.pathname = '/health';
+      u.search = '';
+      u.hash = '';
+      return u.toString();
+    } catch {
+      return '';
+    }
+  }
+
+  async function ensureProxyRunning() {
+    const url = buildProxyHealthUrl();
+    if (!url) throw new Error('Proxy local não configurado');
+    try {
+      const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch {
+      throw new Error('Proxy local não está rodando (execute: node proxy.js)');
+    }
+  }
+
   async function fetchWithProxyFallback(url, options) {
     try {
       return await fetch(url, options);
@@ -1968,7 +2718,12 @@
       if (!msg.includes('failed to fetch')) throw e;
       const proxyUrl = buildProxyUrl(url);
       if (!proxyUrl) throw e;
-      return fetch(proxyUrl, options);
+      await ensureProxyRunning();
+      try {
+        return await fetch(proxyUrl, options);
+      } catch {
+        throw new Error('Falha ao acessar RM via proxy local');
+      }
     }
   }
 
@@ -2080,13 +2835,20 @@
 
   async function integrarCapaReal(capasToIntegrate) {
     showToast('Integrando capa...', 'success');
+    integrateCancelRequested = false;
+    currentIntegrateAbortController = new AbortController();
+    const list = Array.isArray(capasToIntegrate) ? capasToIntegrate : coverRows;
+    integrateStatus = { running: true, phase: 'capa', done: 0, total: list.length, ok: 0, fail: 0, startedAt: Date.now() };
+    startHistoryRun('capa', list.length);
+    updateApiProgressUi();
+    startApiProgressTimer();
 
     const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
     const consultaMedicoUrl = buildConsultaTipoUrl('MEDICO');
     const consultaIdAsoUrl = buildConsultaTipoUrl('IDASO');
     const insertUrl = buildInsertCapaUrl();
 
-    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET' });
+    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const funcionarios = normalizeConsultaRows(funcionariosPayload);
     const funcionarioMap = new Map();
     funcionarios.forEach(r => {
@@ -2096,7 +2858,7 @@
       if (cpf && Number.isFinite(codPessoa)) funcionarioMap.set(cpf, { codPessoa, chapa });
     });
 
-    const medicosPayload = await fetchRmJson(consultaMedicoUrl, { method: 'GET' });
+    const medicosPayload = await fetchRmJson(consultaMedicoUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const medicos = normalizeConsultaRows(medicosPayload);
     const medicoMap = new Map();
     medicos.forEach(r => {
@@ -2105,7 +2867,7 @@
       if (nome && Number.isFinite(codigo)) medicoMap.set(nome, codigo);
     });
 
-    const idAsoPayload = await fetchRmJson(consultaIdAsoUrl, { method: 'GET' });
+    const idAsoPayload = await fetchRmJson(consultaIdAsoUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const idRows = normalizeConsultaRows(idAsoPayload);
     const ultimo = Number(
       pickValue(idRows?.[0] || {}, [/^ultimoi?d$/, /ultimoi?d/, /ultimo/]) ??
@@ -2125,15 +2887,21 @@
     let ok = 0;
     let fail = 0;
 
-    const list = Array.isArray(capasToIntegrate) ? capasToIntegrate : coverRows;
     for (const capa of list) {
+      if (integrateCancelRequested) break;
       if (capa.blocked) continue;
+      const coverKey = buildCoverKey(capa);
 
       const cpf = cpfDigits(capa.cpf);
       const func = funcionarioMap.get(cpf);
       if (!func) {
         capa.comparativo = 'Erro integração (sem CODPESSOA)';
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('capa', coverKey, capa.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
@@ -2141,21 +2909,36 @@
       const codMedico = medicoNomeKey ? medicoMap.get(medicoNomeKey) : null;
       if (!codMedico) {
         capa.comparativo = 'Erro integração (médico não encontrado)';
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('capa', coverKey, capa.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
       const status = classifyParecerAso(capa.parecerAso);
       if (status !== 'APTO' && status !== 'INAPTO') {
         capa.comparativo = 'Erro integração (parecer indefinido)';
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('capa', coverKey, capa.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
       const data = formatDateForRm(capa.dataFicha);
       if (!data) {
         capa.comparativo = 'Erro integração (data inválida)';
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('capa', coverKey, capa.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
@@ -2198,26 +2981,53 @@
             CODCOLIGADA: String(codColigada),
             CODPESSOA: String(func.codPessoa)
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: currentIntegrateAbortController.signal
         });
         capa.comparativo = 'Capa integrada';
-        const key = buildCoverKey(capa);
-        idConsultaByKey[key] = String(nextId);
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        idConsultaByKey[coverKey] = String(nextId);
         persistIdConsultaByKey();
         capa.idConsulta = String(nextId);
         nextId += 1;
         ok += 1;
+        integrateStatus.ok += 1;
       } catch (e) {
         capa.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
+        integrationComparativoByKey[coverKey] = capa.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('capa', coverKey, capa.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
         nextId += 1;
+      }
+
+      integrateStatus.done += 1;
+      if (integrateStatus.done % 5 === 0 || integrateStatus.done === integrateStatus.total) {
+        rebuildAndRender(false);
+        updateApiProgressUi();
       }
     }
 
-    coverIntegrated = ok > 0;
+    coverIntegrated = coverIntegrated || ok > 0;
     localStorage.setItem('coverIntegrated', coverIntegrated ? '1' : '0');
     rebuildAndRender(false);
     updateIntegrateButton();
+    integrateStatus.running = false;
+    currentIntegrateAbortController = null;
+    stopApiProgressTimer();
+    updateApiProgressUi();
+
+    monitorSummary.capa = { total: integrateStatus.total, ok, fail };
+    persistMonitor();
+    renderMonitorPanel();
+    finishHistoryRun(ok, fail, { canceled: integrateCancelRequested });
+
+    if (integrateCancelRequested) {
+      showToast('Integração de capa cancelada', 'error');
+      return;
+    }
 
     if (fail) {
       showToast(`Capa integrada • ${ok} ok • ${fail} falha(s)`, 'error');
@@ -2228,12 +3038,19 @@
 
   async function integrarExamesReal(examesToIntegrate) {
     showToast('Integrando exames...', 'success');
+    integrateCancelRequested = false;
+    currentIntegrateAbortController = new AbortController();
+    const list = Array.isArray(examesToIntegrate) ? examesToIntegrate : detailRows;
+    integrateStatus = { running: true, phase: 'exames', done: 0, total: list.length, ok: 0, fail: 0, startedAt: Date.now() };
+    startHistoryRun('exames', list.length);
+    updateApiProgressUi();
+    startApiProgressTimer();
 
     const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
     const consultaExameUrl = buildConsultaTipoUrl('EXAME');
     const insertUrl = new URL(apiBaseUrl || defaultApiBaseUrl).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
 
-    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET' });
+    const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const funcionarios = normalizeConsultaRows(funcionariosPayload);
     const funcionarioMap = new Map();
     funcionarios.forEach(r => {
@@ -2243,7 +3060,7 @@
       if (cpf && Number.isFinite(codPessoa)) funcionarioMap.set(cpf, { codPessoa, chapa });
     });
 
-    const examePayload = await fetchRmJson(consultaExameUrl, { method: 'GET' });
+    const examePayload = await fetchRmJson(consultaExameUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const exames = normalizeConsultaRows(examePayload);
     const procByCode = new Map();
     exames.forEach(r => {
@@ -2263,43 +3080,71 @@
     let ok = 0;
     let fail = 0;
 
-    const list = Array.isArray(examesToIntegrate) ? examesToIntegrate : detailRows;
     for (const ex of list) {
+      if (integrateCancelRequested) break;
       if (ex.blocked) continue;
+
+      const key = buildCoverKey(ex);
+      const examKey = `${key}|${normalizeCell(ex.codigoExame || '')}|${formatDateTimeForRmExam(ex.dataResExame || ex.dataFicha)}`;
+
       const cpf = cpfDigits(ex.cpf);
       const func = funcionarioMap.get(cpf);
       if (!func) {
         ex.comparativo = 'Erro integração (sem CODPESSOA)';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
-      const key = buildCoverKey(ex);
       const idConsulta = Number(idConsultaByKey[key] || ex.idConsulta || 0);
       if (!Number.isFinite(idConsulta) || idConsulta <= 0) {
         ex.comparativo = 'Erro integração (sem IDCONSULTA)';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
       const codExame = Number(String(ex.codigoExame || '').replace(/\D/g, ''));
       if (!Number.isFinite(codExame)) {
         ex.comparativo = 'Erro integração (CODEXAME inválido)';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
       const codProcedimento = procByCode.get(codExame) || '';
       if (!codProcedimento) {
         ex.comparativo = 'Erro integração (CODPROCEDIMENTO não encontrado)';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
       const data = formatDateTimeForRmExam(ex.dataResExame || ex.dataFicha);
       if (!data) {
         ex.comparativo = 'Erro integração (DATAEXAME inválida)';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+        integrateStatus.done += 1;
         continue;
       }
 
@@ -2334,17 +3179,45 @@
             CODCOLIGADA: '1',
             CODPESSOA: String(func.codPessoa)
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: currentIntegrateAbortController.signal
         });
         ex.comparativo = 'Exame integrado';
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
         ok += 1;
+        integrateStatus.ok += 1;
       } catch (e) {
         ex.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
+        integrationComparativoByKey[examKey] = ex.comparativo;
+        persistIntegrationComparativoByKey();
+        pushMonitorError('exames', examKey, ex.comparativo);
         fail += 1;
+        integrateStatus.fail += 1;
+      }
+
+      integrateStatus.done += 1;
+      if (integrateStatus.done % 10 === 0 || integrateStatus.done === integrateStatus.total) {
+        rebuildAndRender(false);
+        updateApiProgressUi();
       }
     }
 
     rebuildAndRender(false);
+    integrateStatus.running = false;
+    currentIntegrateAbortController = null;
+    stopApiProgressTimer();
+    updateApiProgressUi();
+
+    monitorSummary.exames = { total: integrateStatus.total, ok, fail };
+    persistMonitor();
+    renderMonitorPanel();
+    finishHistoryRun(ok, fail, { canceled: integrateCancelRequested });
+
+    if (integrateCancelRequested) {
+      showToast('Integração de exames cancelada', 'error');
+      return;
+    }
     if (fail) {
       showToast(`Exames integrados • ${ok} ok • ${fail} falha(s)`, 'error');
       return;
@@ -2358,11 +3231,6 @@
       return;
     }
 
-    if (importMode === 'exames' && !coverIntegrated) {
-      showToast('Integre primeiro a capa do ASO (parte 1)', 'error');
-      return;
-    }
-
     const itens = dados.filter(r => !r.blocked);
     if (itens.length === 0) {
       showToast('Nenhum dado válido para integrar', 'error');
@@ -2371,12 +3239,26 @@
 
     if (importMode === 'capa') {
       integrarCapaReal(itens).catch(e => {
+        finalizeIntegracaoWithError(e?.message || 'Falha na integração');
         showToast(String(e?.message || 'Falha na integração'), 'error');
       });
       return;
     }
 
+    if (importMode === 'exames') {
+      const eligible = itens.some(r => {
+        const key = buildCoverKey(r);
+        const idConsulta = Number(idConsultaByKey[key] || r.idConsulta || 0);
+        return Number.isFinite(idConsulta) && idConsulta > 0;
+      });
+      if (!eligible) {
+        showToast('Nenhum exame com capa integrada (sem IDCONSULTA)', 'error');
+        return;
+      }
+    }
+
     integrarExamesReal(itens).catch(e => {
+      finalizeIntegracaoWithError(e?.message || 'Falha na integração');
       showToast(String(e?.message || 'Falha na integração'), 'error');
     });
   }
@@ -2414,40 +3296,51 @@
     const wrap = document.getElementById('apiProgressWrap');
     const bar = document.getElementById('apiProgressBar');
     const text = document.getElementById('apiProgressText');
+    const title = document.getElementById('apiProgressTitle');
     const sub = document.getElementById('apiProgressSub');
     const cancelBtn = document.getElementById('apiProgressCancel');
-    if (!wrap || !bar || !text || !sub || !cancelBtn) return;
+    if (!wrap || !bar || !text || !title || !sub || !cancelBtn) return;
 
-    if (!consultStatus?.running) {
+    const active =
+      consultStatus?.running
+        ? { label: 'Comparação', ...consultStatus, canceling: consultCancelRequested }
+        : integrateStatus?.running
+          ? { label: integrateStatus.phase === 'exames' ? 'Integração Exames' : 'Integração Capa', ...integrateStatus, canceling: integrateCancelRequested }
+          : null;
+
+    if (!active) {
       wrap.classList.add('hidden');
       stopApiProgressTimer();
       return;
     }
 
     wrap.classList.remove('hidden');
-    const total = Math.max(1, Number(consultStatus.total || 1));
-    const done = Math.min(total, Number(consultStatus.done || 0));
+    title.innerText = active.label;
+
+    const total = Math.max(1, Number(active.total || 1));
+    const done = Math.min(total, Number(active.done || 0));
     const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
     bar.style.width = `${pct}%`;
     text.innerText = `${pct}%`;
 
-    const ok = Number(consultStatus.ok || 0);
-    const fail = Number(consultStatus.fail || 0);
-    const startedAt = Number(consultStatus.startedAt || 0);
+    const ok = Number(active.ok || 0);
+    const fail = Number(active.fail || 0);
+    const startedAt = Number(active.startedAt || 0);
     const elapsedMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
     const elapsedSec = Math.floor(elapsedMs / 1000);
     const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
     const ss = String(elapsedSec % 60).padStart(2, '0');
     sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail} • tempo ${mm}:${ss}`;
 
-    cancelBtn.disabled = consultCancelRequested;
-    wrap.classList.toggle('api-progress--canceling', consultCancelRequested);
+    cancelBtn.disabled = Boolean(active.canceling);
+    wrap.classList.toggle('api-progress--canceling', Boolean(active.canceling));
+    renderMonitorPanel();
   }
 
   function startApiProgressTimer() {
     if (apiProgressTimerId) return;
     apiProgressTimerId = setInterval(() => {
-      if (!consultStatus?.running) {
+      if (!consultStatus?.running && !integrateStatus?.running) {
         stopApiProgressTimer();
         return;
       }
@@ -2468,6 +3361,7 @@
   renderTable(columnsByMode[importMode], []);
   updateIntegrateButton();
   showPage(currentPage);
+  void restoreLastContext();
 </script>
 
 </body>
