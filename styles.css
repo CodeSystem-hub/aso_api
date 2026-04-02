@@ -862,6 +862,8 @@ body.dashboard {
 
 .icon-button:hover { background: rgba(108, 140, 255, 0.08); }
 
+.icon-button--hamburger { display: none; }
+
 .icon-button--refresh svg {
   width: 20px;
   height: 20px;
@@ -2306,7 +2308,7 @@ body.dashboard {
 }
 
 @media (max-width: 900px) {
-  .icon-button { display: inline-flex; }
+  .icon-button--hamburger { display: inline-flex; }
   .api-progress__actions { width: 100%; justify-content: space-between; }
 
   .sidebar {
