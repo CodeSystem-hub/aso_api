@@ -9,22 +9,45 @@ Aplicação front-end (estática) para importar ASO via planilha, revisar dados,
 - [dashboard.html](dashboard.html) — dashboard/importação, filtros, comparação e integração
 - [styles.css](styles.css) — estilos (login + dashboard)
 - [proxy.js](proxy.js) — proxy local para contornar CORS ao consultar RM
+- [backend/main.py](backend/main.py) — servidor local (FastAPI) que serve o front-end e inclui proxy + histórico
 
 ## Requisitos
 
 - Navegador moderno (Chrome/Edge/Firefox).
-- Para consulta/comparação via RM, normalmente é necessário um proxy local:
-  - Node.js (18+).
+- Para consulta/comparação via RM, normalmente é necessário um proxy/servidor local:
+  - Python 3.11+ (recomendado) ou Node.js 18+.
 
 ## Como executar
 
-### Opção A) Live Server
+### Opção A) Servidor local (Python) (recomendado)
+
+1. No terminal, dentro da pasta do projeto:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r .\backend\requirements.txt
+uvicorn backend.main:app --host 127.0.0.1 --port 8787
+```
+
+2. Abra no navegador:
+
+```text
+http://localhost:8787/login.html
+```
+
+Essa opção já inclui:
+
+- `/proxy` para chamadas RM (CORS)
+- `/save` e `/history/list` para salvar/listar relatórios `.xlsx` em `historico/`
+
+### Opção B) Live Server
 
 1. Abra a pasta no VS Code.
 2. Use a extensão “Live Server” e abra `login.html`.
 3. O projeto usa a porta configurada em `.vscode/settings.json` (padrão: `5501`).
 
-### Opção B) Abrir o HTML diretamente
+### Opção C) Abrir o HTML diretamente
 
 Você pode abrir `login.html` no navegador, mas chamadas de rede podem ter limitações maiores (CORS). Para usar API do RM, prefira a Opção A + proxy.
 
@@ -107,5 +130,4 @@ Clique em **Mapeamento** para selecionar qual coluna do arquivo alimenta cada ca
 
 ## Observações e limitações
 
-- É um projeto 100% front-end (sem backend próprio).
-- A integração real com RM (POST/PUT) deve ser implementada quando os endpoints/payloads estiverem definidos.
+- O servidor Python é opcional, mas recomendado para reduzir problemas de CORS e salvar histórico em pasta.

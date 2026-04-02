@@ -22,10 +22,11 @@
           <span class="nav-module__chevron" aria-hidden="true"></span>
         </button>
         <div class="nav-module__items">
-          <button class="nav-item active" type="button" data-page="asoImport" onclick="showPage('asoImport')">Importação</button>
+          <button class="nav-item active" type="button" data-page="asoImport" onclick="showPage('asoImport')">Integração</button>
+          <button class="nav-item" type="button" data-page="asoAcompanhamento" onclick="showPage('asoAcompanhamento')">Acompanhamento</button>
           <button class="nav-item" type="button" data-page="asoHistorico" onclick="showPage('asoHistorico')">Histórico</button>
           <button class="nav-item" type="button" data-page="asoRelatorios" onclick="showPage('asoRelatorios')">Relatórios</button>
-          <button class="nav-item" type="button" data-page="asoAcompanhamento" onclick="showPage('asoAcompanhamento')">Acompanhamento</button>
+          <button class="nav-item" type="button" data-page="asoEsocial" onclick="showPage('asoEsocial')">eSocial</button>
         </div>
       </div>
 
@@ -49,10 +50,19 @@
         <button class="icon-button" type="button" onclick="openSidebar()" aria-label="Abrir menu">
           <span aria-hidden="true">≡</span>
         </button>
-        <div class="topbar__title" id="pageTitle">Importação de ASO</div>
+        <div class="topbar__title" id="pageTitle">Integração</div>
       </div>
 
       <div class="topbar__actions">
+        <div class="topbar__meta">
+          <div id="topbarGreeting" class="topbar__greeting"></div>
+          <div id="topbarClock" class="topbar__clock meta"></div>
+        </div>
+        <button id="refreshBtn" class="icon-button icon-button--refresh" type="button" onclick="refreshPage()" aria-label="Atualizar página" title="Atualizar página">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.64-.8 3.09-2.03 4l1.46 1.46A6.982 6.982 0 0 0 19 13c0-3.87-3.13-7-7-7zm-5.43.73L5.11 5.27A6.982 6.982 0 0 0 5 11c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.64.8-3.09 2.03-4L6.57 6.73z" fill="currentColor"></path>
+          </svg>
+        </button>
         <button class="button" type="button" onclick="consultarComparar()">Consultar/Comparar</button>
         <button id="integrarBtn" class="button button--primary" type="button" onclick="integrar()">Integrar</button>
       </div>
@@ -101,6 +111,90 @@
           <div class="import-bar__right">
             <button class="button" type="button" onclick="toggleMappingPanel()">Mapeamento</button>
             <button class="button" type="button" onclick="clearAllFilters()">Limpar filtros</button>
+            <button id="clearSheetBtn" class="button" type="button" onclick="clearCurrentSpreadsheet()">Limpar planilha</button>
+          </div>
+        </div>
+
+        <div id="importTrackingPanels" class="monitor-grid monitor-grid--import hidden">
+          <div class="monitor-card monitor-card--compact">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Comparação <span id="impCompareDot" class="live-dot hidden" aria-hidden="true"></span></div>
+              <div id="impCompareStatus" class="meta"></div>
+            </div>
+            <div id="impCompareProgress" class="progress progress--dynamic">
+              <div class="progress__track">
+                <div id="impCompareBar" class="progress__fill" style="width:0%;"></div>
+              </div>
+            </div>
+            <div class="process-metrics">
+              <div class="process-metric">
+                <div class="process-metric__label">Velocidade</div>
+                <div id="impCompareRate" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Tempo</div>
+                <div id="impCompareElapsed" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Restante</div>
+                <div id="impCompareEta" class="process-metric__value">-</div>
+              </div>
+            </div>
+            <div id="impCompareSub" class="meta monitor-process__sub"></div>
+          </div>
+
+          <div class="monitor-card monitor-card--compact">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Integração Capa <span id="impCapaDot" class="live-dot hidden" aria-hidden="true"></span></div>
+              <div id="impCapaStatus" class="meta"></div>
+            </div>
+            <div id="impCapaProgress" class="progress progress--dynamic">
+              <div class="progress__track">
+                <div id="impCapaBar" class="progress__fill" style="width:0%;"></div>
+              </div>
+            </div>
+            <div class="process-metrics">
+              <div class="process-metric">
+                <div class="process-metric__label">Velocidade</div>
+                <div id="impCapaRate" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Tempo</div>
+                <div id="impCapaElapsed" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Restante</div>
+                <div id="impCapaEta" class="process-metric__value">-</div>
+              </div>
+            </div>
+            <div id="impCapaSub" class="meta monitor-process__sub"></div>
+          </div>
+
+          <div class="monitor-card monitor-card--compact">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Integração Exames <span id="impExamesDot" class="live-dot hidden" aria-hidden="true"></span></div>
+              <div id="impExamesStatus" class="meta"></div>
+            </div>
+            <div id="impExamesProgress" class="progress progress--dynamic">
+              <div class="progress__track">
+                <div id="impExamesBar" class="progress__fill" style="width:0%;"></div>
+              </div>
+            </div>
+            <div class="process-metrics">
+              <div class="process-metric">
+                <div class="process-metric__label">Velocidade</div>
+                <div id="impExamesRate" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Tempo</div>
+                <div id="impExamesElapsed" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Restante</div>
+                <div id="impExamesEta" class="process-metric__value">-</div>
+              </div>
+            </div>
+            <div id="impExamesSub" class="meta monitor-process__sub"></div>
           </div>
         </div>
 
@@ -177,25 +271,92 @@
           </div>
         </div>
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-card__label">Registros</div>
-            <div id="histCount" class="stat-card__value">0</div>
+        <div class="dashboard-grid">
+          <div class="dashboard-card dashboard-card--primary">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="11" width="3.5" height="9" rx="1" fill="#6c8cff"></rect>
+                <rect x="10.25" y="7" width="3.5" height="13" rx="1" fill="#b47cff"></rect>
+                <rect x="16.5" y="4" width="3.5" height="16" rx="1" fill="#34d399"></rect>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Total de eventos</div>
+              <div id="histTotal" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Todos os registros</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card__label">Último usuário</div>
-            <div id="histUser" class="stat-card__value">-</div>
+
+          <div class="dashboard-card dashboard-card--success">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.2 16.6 5.4 12.8l-1.4 1.4 5.2 5.2L20 8.6l-1.4-1.4z" fill="#34d399"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Processados</div>
+              <div id="histProcessed" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Concluídos com sucesso</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card__label">Último processo</div>
-            <div id="histLast" class="stat-card__value">-</div>
+
+          <div class="dashboard-card dashboard-card--warning">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2zm2 2v3.17L12 11l4-3.83V4H8zm8 16v-3.17L12 13l-4 3.83V20h8z" fill="#fbbf24"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Pendentes</div>
+              <div id="histPending" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Aguardando processamento</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--danger">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z" fill="#f87171"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Com erros</div>
+              <div id="histErrors" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Necessitam atenção</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="monitor-grid">
+          <div class="monitor-card">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Distribuição por Tipo</div>
+              <div class="meta">Gráfico de Pizza</div>
+            </div>
+            <div class="pie-chart pie-chart--enhanced" id="histPieChart">
+              <div class="pie-chart__container">
+                <canvas id="histPieCanvas" width="220" height="220"></canvas>
+              </div>
+              <div class="pie-chart__legend pie-chart__legend--interactive" id="histPieLegend"></div>
+            </div>
+          </div>
+
+          <div class="monitor-card">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Evolução Temporal</div>
+              <div class="meta">Últimos 7 dias</div>
+            </div>
+            <div class="bar-chart-container">
+              <canvas id="histBarCanvas" width="500" height="250"></canvas>
+              <div class="bar-chart__legend" id="histBarLegend"></div>
+            </div>
           </div>
         </div>
 
         <div class="monitor-card" style="margin-top:12px;">
           <div class="monitor-card__head">
             <div class="monitor-card__title">Processos</div>
-            <div class="monitor-actions">
+            <div class="monitor-actions monitor-actions--inline">
               <select id="histFilter" class="select" onchange="renderHistorico()">
                 <option value="all">Todos</option>
                 <option value="comparacao">Comparação</option>
@@ -248,47 +409,216 @@
 
     <section id="asoRelatoriosPage" class="page hidden">
       <div class="card">
-        <div class="card__header">
-          <div>
-            <div class="muted">Resumo da planilha importada.</div>
+        <div class="import-bar import-bar--top">
+          <div class="import-bar__left">
+            <div class="muted import-hint">Relatórios e indicadores da planilha.</div>
           </div>
+          <div class="import-bar__right">
+            <button class="button" type="button" onclick="renderAsoRelatorios()">Atualizar</button>
+            <button class="button" type="button" onclick="showPage('asoAcompanhamento')">Ver erros</button>
+          </div>
+        </div>
+
+        <div id="reportTopCards" class="dashboard-grid hidden">
+          <div class="dashboard-card dashboard-card--primary">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="11" width="3.5" height="9" rx="1" fill="#6c8cff"></rect>
+                <rect x="10.25" y="7" width="3.5" height="13" rx="1" fill="#b47cff"></rect>
+                <rect x="16.5" y="4" width="3.5" height="16" rx="1" fill="#34d399"></rect>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Total de eventos</div>
+              <div id="reportTotal" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Todos os registros</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--success">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.2 16.6 5.4 12.8l-1.4 1.4 5.2 5.2L20 8.6l-1.4-1.4z" fill="#34d399"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Processados</div>
+              <div id="reportProcessed" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Concluídos com sucesso</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--warning">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2zm2 2v3.17L12 11l4-3.83V4H8zm8 16v-3.17L12 13l-4 3.83V20h8z" fill="#fbbf24"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Pendentes</div>
+              <div id="reportPending" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Aguardando processamento</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--danger">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z" fill="#f87171"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Com erros</div>
+              <div id="reportErrors" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Necessitam atenção</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="reportFilters" class="report-filters hidden">
+          <div class="report-filters__bar">
+            <div class="report-filters__left">
+              <select id="reportFilterSource" class="select" onchange="onReportFiltersChange()">
+                <option value="all">Tudo</option>
+                <option value="capa">Capa</option>
+                <option value="exames">Exames</option>
+              </select>
+              <select id="reportFilterParecer" class="select" onchange="onReportFiltersChange()">
+                <option value="all">Parecer: Todos</option>
+                <option value="APTO">Parecer: APTO</option>
+                <option value="INAPTO">Parecer: INAPTO</option>
+                <option value="INDEFINIDO">Parecer: Indefinido</option>
+              </select>
+              <label class="check report-filters__check">
+                <input id="reportFilterPendingOnly" type="checkbox" onchange="onReportFiltersChange()">
+                <span>Somente pendências</span>
+              </label>
+              <input id="reportFilterSearch" class="input input--search" placeholder="Buscar (cpf, nome, exame...)" onkeyup="onReportFiltersChange()">
+            </div>
+            <div class="report-filters__right">
+              <button class="button" type="button" onclick="clearReportFilters()">Limpar</button>
+            </div>
+          </div>
+          <div id="reportFilterChips" class="report-chips"></div>
         </div>
 
         <div id="reportEmpty" class="muted">Carregue uma planilha para visualizar os relatórios.</div>
 
-        <div id="reportContent" class="stats-grid hidden">
-          <div class="stat-card">
-            <div class="stat-card__label">Importados (capas)</div>
-            <div id="reportTotal" class="stat-card__value">0</div>
+        <div id="reportDashboard" class="report-dashboard hidden">
+          <div class="report-grid report-grid--top">
+            <div class="report-panel">
+            <div class="report-panel__head">
+              <div class="report-panel__title">Indicadores</div>
+              <div class="meta">Planilha atual</div>
+            </div>
+            <div class="report-kpis">
+              <div class="report-kpi">
+                <div class="report-kpi__icon" aria-hidden="true">#</div>
+                <div class="report-kpi__main">
+                  <div class="report-kpi__label">CPFs únicos</div>
+                  <div id="reportKpiCpfs" class="report-kpi__value">0</div>
+                </div>
+              </div>
+              <div class="report-kpi">
+                <div class="report-kpi__icon" aria-hidden="true">C</div>
+                <div class="report-kpi__main">
+                  <div class="report-kpi__label">Capas</div>
+                  <div id="reportKpiCapas" class="report-kpi__value">0</div>
+                </div>
+              </div>
+              <div class="report-kpi">
+                <div class="report-kpi__icon" aria-hidden="true">E</div>
+                <div class="report-kpi__main">
+                  <div class="report-kpi__label">Exames</div>
+                  <div id="reportKpiExames" class="report-kpi__value">0</div>
+                </div>
+              </div>
+              <div class="report-kpi report-kpi--warn" role="button" tabindex="0" onclick="openReportPendenciasModal()" onkeydown="if(event.key==='Enter') openReportPendenciasModal()">
+                <div class="report-kpi__icon" aria-hidden="true">!</div>
+                <div class="report-kpi__main">
+                  <div class="report-kpi__label">Pendências</div>
+                  <div id="reportKpiPendencias" class="report-kpi__value">0</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card__label">Apto</div>
-            <div id="reportApto" class="stat-card__value stat-card__value--success">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card__label">Inapto</div>
-            <div id="reportInapto" class="stat-card__value stat-card__value--danger">0</div>
-          </div>
-        </div>
 
-        <div id="reportBars" class="report-bars hidden">
-          <div class="report-bar">
-            <div class="report-bar__head">
-              <div class="report-bar__title">Apto</div>
-              <div id="reportAptoPct" class="report-bar__meta">0%</div>
+            <div class="report-panel">
+            <div class="report-panel__head">
+              <div class="report-panel__title">Parecer do ASO</div>
+              <div class="meta">Apto / Inapto / Indefinido</div>
             </div>
-            <div class="report-bar__track">
-              <div id="reportAptoFill" class="report-bar__fill report-bar__fill--success" style="width:0%;"></div>
+            <div class="pie-chart pie-chart--enhanced" id="reportParecerChart">
+              <div class="pie-chart__container">
+                <canvas id="reportPieCanvas" width="220" height="220"></canvas>
+                <div class="pie-chart__center">
+                  <div class="pie-chart__total" id="reportPieTotal">0</div>
+                  <div class="pie-chart__label meta">registros</div>
+                </div>
+              </div>
+              <div class="pie-chart__legend pie-chart__legend--interactive" id="reportPieLegend"></div>
             </div>
           </div>
 
-          <div class="report-bar">
-            <div class="report-bar__head">
-              <div class="report-bar__title">Inapto</div>
-              <div id="reportInaptoPct" class="report-bar__meta">0%</div>
+            <div class="report-panel">
+            <div class="report-panel__head">
+              <div class="report-panel__title">Integração</div>
+              <div class="meta">Ok / falhas / pendente</div>
             </div>
-            <div class="report-bar__track">
-              <div id="reportInaptoFill" class="report-bar__fill report-bar__fill--danger" style="width:0%;"></div>
+
+            <div class="report-int">
+              <div class="report-int__row">
+                <div class="report-int__head">
+                  <div class="report-int__label">Capa</div>
+                  <div id="reportCapaMeta" class="report-int__meta"></div>
+                </div>
+                <div class="report-stack">
+                  <div id="reportCapaOk" class="report-stack__seg report-stack__seg--ok" style="width:0%;"></div>
+                  <div id="reportCapaFail" class="report-stack__seg report-stack__seg--fail" style="width:0%;"></div>
+                  <div id="reportCapaPend" class="report-stack__seg report-stack__seg--pend" style="width:0%;"></div>
+                </div>
+              </div>
+
+              <div class="report-int__row">
+                <div class="report-int__head">
+                  <div class="report-int__label">Exames</div>
+                  <div id="reportExMeta" class="report-int__meta"></div>
+                </div>
+                <div class="report-stack">
+                  <div id="reportExOk" class="report-stack__seg report-stack__seg--ok" style="width:0%;"></div>
+                  <div id="reportExFail" class="report-stack__seg report-stack__seg--fail" style="width:0%;"></div>
+                  <div id="reportExPend" class="report-stack__seg report-stack__seg--pend" style="width:0%;"></div>
+                </div>
+              </div>
+
+              <div class="report-legend">
+                <div class="report-legend__item"><span class="report-legend__dot report-legend__dot--ok"></span>Ok</div>
+                <div class="report-legend__item"><span class="report-legend__dot report-legend__dot--fail"></span>Falhas</div>
+                <div class="report-legend__item"><span class="report-legend__dot report-legend__dot--pend"></span>Pendente</div>
+              </div>
+            </div>
+          </div>
+          </div>
+
+          <div class="report-grid report-grid--bottom">
+            <div class="report-panel">
+              <div class="report-panel__head">
+                <div class="report-panel__title">Hoje</div>
+                <div id="reportTodayDate" class="meta"></div>
+              </div>
+              <div id="reportTodayList" class="report-list"></div>
+            </div>
+
+            <div class="report-panel">
+              <div class="report-panel__head">
+                <div class="report-panel__title">Erros (Top)</div>
+                <div class="meta">Últimos registros</div>
+              </div>
+              <div class="bar-chart-container" style="margin-top:10px;">
+                <canvas id="reportErrorsBarCanvas" width="500" height="250"></canvas>
+                <div class="bar-chart__legend" id="reportErrorsBarLegend"></div>
+              </div>
+              <div id="reportTopErrorsList" class="report-errors"></div>
             </div>
           </div>
         </div>
@@ -308,37 +638,146 @@
           </div>
         </div>
 
-        <div class="monitor-grid">
-          <div class="monitor-card">
+        <div class="dashboard-grid">
+          <div class="dashboard-card dashboard-card--primary">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="11" width="3.5" height="9" rx="1" fill="#6c8cff"></rect>
+                <rect x="10.25" y="7" width="3.5" height="13" rx="1" fill="#b47cff"></rect>
+                <rect x="16.5" y="4" width="3.5" height="16" rx="1" fill="#34d399"></rect>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Total de eventos</div>
+              <div id="monTotal" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Todos os registros</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--success">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.2 16.6 5.4 12.8l-1.4 1.4 5.2 5.2L20 8.6l-1.4-1.4z" fill="#34d399"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Processados</div>
+              <div id="monProcessed" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Concluídos com sucesso</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--warning">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2zm2 2v3.17L12 11l4-3.83V4H8zm8 16v-3.17L12 13l-4 3.83V20h8z" fill="#fbbf24"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Pendentes</div>
+              <div id="monPending" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Aguardando processamento</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--danger">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z" fill="#f87171"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Com erros</div>
+              <div id="monErrors" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Necessitam atenção</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="monitor-grid monitor-grid--acomp">
+          <div class="monitor-card monitor-card--compact">
             <div class="monitor-card__head">
-              <div class="monitor-card__title">Processo atual</div>
+              <div class="monitor-card__title">Processo atual <span id="monLiveDot" class="live-dot hidden" aria-hidden="true"></span></div>
               <div id="monCurrentStatus" class="meta"></div>
             </div>
-            <div class="progress">
+            <div id="monStepper" class="process-stepper">
+              <div id="monStepCompare" class="process-step">
+                <div class="process-step__dot" aria-hidden="true"></div>
+                <div class="process-step__label">Comparação</div>
+              </div>
+              <div id="monStepCapa" class="process-step">
+                <div class="process-step__dot" aria-hidden="true"></div>
+                <div class="process-step__label">Integração Capa</div>
+              </div>
+              <div id="monStepExames" class="process-step">
+                <div class="process-step__dot" aria-hidden="true"></div>
+                <div class="process-step__label">Integração Exames</div>
+              </div>
+            </div>
+            <div id="monProgress" class="progress progress--dynamic">
               <div class="progress__track">
                 <div id="monCurrentBar" class="progress__fill" style="width:0%;"></div>
               </div>
             </div>
-            <div id="monCurrentSub" class="meta" style="margin-top:8px;"></div>
+            <div id="monProcessMeta" class="process-metrics">
+              <div class="process-metric">
+                <div class="process-metric__label">Velocidade</div>
+                <div id="monRate" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Tempo</div>
+                <div id="monElapsed" class="process-metric__value">-</div>
+              </div>
+              <div class="process-metric">
+                <div class="process-metric__label">Restante</div>
+                <div id="monEta" class="process-metric__value">-</div>
+              </div>
+            </div>
+            <div id="monCurrentSub" class="meta monitor-process__sub"></div>
           </div>
 
-          <div class="monitor-card">
+          <div class="monitor-card monitor-card--compact">
             <div class="monitor-card__head">
               <div class="monitor-card__title">Resumo</div>
               <div class="meta">Sessão atual</div>
             </div>
-            <div class="stats-grid" style="padding-top:10px;">
-              <div class="stat-card">
-                <div class="stat-card__label">Comparação</div>
-                <div id="monSumCompare" class="stat-card__value">0</div>
+            <div class="monitor-kpis">
+              <div class="monitor-kpi">
+                <div class="monitor-kpi__label">Comparação</div>
+                <div id="monSumCompare" class="monitor-kpi__value">0</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-card__label">Capa (ok/falhas)</div>
-                <div id="monSumCapa" class="stat-card__value">0/0</div>
+              <div class="monitor-kpi">
+                <div class="monitor-kpi__label">Capa</div>
+                <div id="monSumCapa" class="monitor-kpi__value">0/0</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-card__label">Exames (ok/falhas)</div>
-                <div id="monSumExames" class="stat-card__value">0/0</div>
+              <div class="monitor-kpi">
+                <div class="monitor-kpi__label">Exames</div>
+                <div id="monSumExames" class="monitor-kpi__value">0/0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="monitor-card monitor-card--compact">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Integração</div>
+              <div class="meta">Ok / falhas</div>
+            </div>
+            <div class="monitor-chart monitor-chart--compact">
+              <div class="monitor-chart__row">
+                <div class="monitor-chart__label">Capa</div>
+                <div class="monitor-chart__bar">
+                  <div id="monChartCapaOk" class="monitor-chart__seg monitor-chart__seg--ok" style="width:0%"></div>
+                  <div id="monChartCapaFail" class="monitor-chart__seg monitor-chart__seg--fail" style="width:0%"></div>
+                </div>
+                <div id="monChartCapaValue" class="monitor-chart__value">0/0</div>
+              </div>
+              <div class="monitor-chart__row">
+                <div class="monitor-chart__label">Exames</div>
+                <div class="monitor-chart__bar">
+                  <div id="monChartExOk" class="monitor-chart__seg monitor-chart__seg--ok" style="width:0%"></div>
+                  <div id="monChartExFail" class="monitor-chart__seg monitor-chart__seg--fail" style="width:0%"></div>
+                </div>
+                <div id="monChartExValue" class="monitor-chart__value">0/0</div>
               </div>
             </div>
           </div>
@@ -347,12 +786,19 @@
         <div class="monitor-card" style="margin-top:12px;">
           <div class="monitor-card__head">
             <div class="monitor-card__title">Erros</div>
-            <div class="monitor-actions">
+            <div class="monitor-actions monitor-actions--inline">
               <select id="monErrorFilter" class="select" onchange="renderMonitorPanel()">
                 <option value="all">Todos</option>
                 <option value="comparacao">Comparação</option>
                 <option value="capa">Capa</option>
                 <option value="exames">Exames</option>
+              </select>
+              <select id="monErrorLimit" class="select" onchange="renderMonitorPanel()">
+                <option value="50">Limite: 50</option>
+                <option value="100">Limite: 100</option>
+                <option value="200" selected>Limite: 200</option>
+                <option value="400">Limite: 400</option>
+                <option value="800">Limite: 800</option>
               </select>
               <input id="monErrorSearch" class="input input--search" placeholder="Buscar erro..." onkeyup="renderMonitorPanel()">
             </div>
@@ -375,6 +821,156 @@
       </div>
     </section>
 
+    <section id="asoEsocialPage" class="page hidden">
+      <div class="card">
+        <div class="import-bar import-bar--top">
+          <div class="import-bar__left">
+            <div class="muted import-hint">Fila de eventos do eSocial (API.0011).</div>
+          </div>
+        </div>
+
+        <div class="import-bar">
+          <div class="import-bar__left">
+            <input id="esocialSearch" type="text" class="input input--search" placeholder="Buscar..." onkeyup="onEsocialSearchChange()">
+            <div id="esocialCount" class="meta"></div>
+          </div>
+          <div class="import-bar__right import-bar__right--inline">
+            <select id="esocialStatusFilter" class="select" onchange="onEsocialStatusChange()">
+              <option value="all">Todos</option>
+            </select>
+            <button class="button" type="button" onclick="loadEsocialQueue()">Atualizar</button>
+          </div>
+        </div>
+
+        <div id="esocialStats">
+        <div class="dashboard-grid">
+          <div class="dashboard-card dashboard-card--primary">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="11" width="3.5" height="9" rx="1" fill="#6c8cff"></rect>
+                <rect x="10.25" y="7" width="3.5" height="13" rx="1" fill="#b47cff"></rect>
+                <rect x="16.5" y="4" width="3.5" height="16" rx="1" fill="#34d399"></rect>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Total de eventos</div>
+              <div id="esocialTotal" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Todos os registros</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--success">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.2 16.6 5.4 12.8l-1.4 1.4 5.2 5.2L20 8.6l-1.4-1.4z" fill="#34d399"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Processados</div>
+              <div id="esocialProcessed" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Concluídos com sucesso</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--warning">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2zm2 2v3.17L12 11l4-3.83V4H8zm8 16v-3.17L12 13l-4 3.83V20h8z" fill="#fbbf24"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Pendentes</div>
+              <div id="esocialPending" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Aguardando processamento</div>
+            </div>
+          </div>
+
+          <div class="dashboard-card dashboard-card--danger">
+            <div class="dashboard-card__icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z" fill="#f87171"></path>
+              </svg>
+            </div>
+            <div class="dashboard-card__content">
+              <div class="dashboard-card__label">Com erros</div>
+              <div id="esocialErrors" class="dashboard-card__value">0</div>
+              <div class="dashboard-card__trend meta">Necessitam atenção</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="monitor-grid">
+          <div class="monitor-card monitor-card--stats">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Visão Geral Detalhada</div>
+              <div class="meta">Métricas em tempo real</div>
+            </div>
+            <div class="esocial-overview">
+              <div id="esocialSuccessGauge" class="esocial-gauge" style="--pct:0">
+                <div class="esocial-gauge__inner">
+                  <div class="esocial-gauge__k meta">Taxa de sucesso</div>
+                  <div id="esocialSuccessRate" class="esocial-gauge__v">0%</div>
+                  <div class="esocial-gauge__sub meta">Atualizado: <span id="esocialLastUpdate">-</span></div>
+                </div>
+              </div>
+              <div class="esocial-metrics">
+                <div class="esocial-metric esocial-metric--primary">
+                  <div class="esocial-metric__k">Status distintos</div>
+                  <div id="esocialDistinct" class="esocial-metric__v">0</div>
+                  <div class="esocial-metric__sub meta">Diversidade de retornos</div>
+                </div>
+                <div class="esocial-metric esocial-metric--accent">
+                  <div class="esocial-metric__k">Mais frequente</div>
+                  <div id="esocialTop" class="esocial-metric__v esocial-metric__v--text">-</div>
+                  <div class="esocial-metric__sub meta">Status líder no período</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="monitor-card monitor-card--chart">
+            <div class="monitor-card__head">
+              <div class="monitor-card__title">Distribuição de Status</div>
+              <div class="meta">Proporção visual dos eventos</div>
+            </div>
+            <div class="chart-container">
+              <div class="pie-chart pie-chart--enhanced">
+                <div class="pie-chart__container">
+                  <canvas id="esocialPieCanvas" width="220" height="220"></canvas>
+                  <div class="pie-chart__center">
+                    <div class="pie-chart__total" id="esocialPieTotal">0</div>
+                    <div class="pie-chart__label meta">eventos</div>
+                  </div>
+                </div>
+                <div class="pie-chart__legend pie-chart__legend--interactive" id="esocialPieLegend"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="monitor-card monitor-card--bar" style="margin-top:16px;">
+          <div class="monitor-card__head">
+            <div class="monitor-card__title">Top 5 Status</div>
+            <div class="meta">Ranking dos mais frequentes</div>
+          </div>
+          <div class="bar-chart-container">
+            <canvas id="esocialBarCanvas" width="500" height="250"></canvas>
+            <div class="bar-chart__legend" id="esocialBarLegend"></div>
+          </div>
+        </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:10px;">
+          <table class="table">
+            <thead id="esocialTableHead"></thead>
+            <tbody id="esocialTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="esocialPagination" class="pagination hidden"></div>
+      </div>
+    </section>
+
     <section id="vacinaPage" class="page hidden">
       <div class="card">
         <div class="muted">Em construção.</div>
@@ -384,6 +980,35 @@
 </div>
 
 <div id="toast" class="toast"></div>
+
+<div id="recordModalOverlay" class="modal-overlay hidden" onclick="onRecordModalOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recordModalTitle">
+    <div class="modal__head">
+      <div id="recordModalTitle" class="modal__title">Registro</div>
+      <button class="icon-button modal__close" type="button" onclick="closeRecordModal()" aria-label="Fechar">×</button>
+    </div>
+    <div id="recordModalSubtitle" class="meta"></div>
+    <div id="recordModalBody" class="kv-list"></div>
+    <div class="modal__actions">
+      <button class="button button--primary" type="button" onclick="closeRecordModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModalOverlay" class="modal-overlay hidden" onclick="onConfirmModalOverlayClick(event)">
+  <div class="modal modal--confirm" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal__head">
+      <div id="confirmModalTitle" class="modal__title">Confirmação</div>
+      <button class="icon-button modal__close" type="button" onclick="closeConfirmModal(false)" aria-label="Fechar">×</button>
+    </div>
+    <div id="confirmModalMessage" class="confirm-message"></div>
+    <div id="confirmModalDetails" class="confirm-details"></div>
+    <div class="modal__actions">
+      <button class="button" type="button" onclick="closeConfirmModal(false)">Cancelar</button>
+      <button id="confirmModalConfirmBtn" class="button button--danger" type="button" onclick="closeConfirmModal(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -420,6 +1045,13 @@
   let apiUser = sessionStorage.getItem('apiUser') || '';
   let apiPass = sessionStorage.getItem('apiPass') || '';
   let apiBearerToken = sessionStorage.getItem('apiBearerToken') || '';
+  let esocialRows = [];
+  let esocialSearch = '';
+  let esocialStatusValue = 'all';
+  let esocialLastLoadedAt = 0;
+  let esocialLastLoadedUser = '';
+  let esocialPage = 1;
+  const esocialPageSize = 100;
   let employeeCache = {};
   let employeeCacheErrors = {};
   let consultStatus = { running: false, done: 0, total: 0, ok: 0, fail: 0, startedAt: 0 };
@@ -474,17 +1106,21 @@
   })();
   const pageSize = 100;
   let currentListPage = 1;
-  let currentPage = 'asoImport';
+  let currentPage = sessionStorage.getItem('currentPage') || 'asoImport';
   const pageConfig = {
-    asoImport: { title: 'Importação de ASO', canIntegrate: true },
+    asoImport: { title: 'Integração', canIntegrate: true },
     asoHistorico: { title: 'Histórico de ASO', canIntegrate: false },
     asoRelatorios: { title: 'Relatórios', canIntegrate: false },
     asoAcompanhamento: { title: 'Acompanhamento', canIntegrate: false },
+    asoEsocial: { title: 'eSocial', canIntegrate: false },
     vacina: { title: 'Vacinas', canIntegrate: false }
   };
+  if (!pageConfig[currentPage]) currentPage = 'asoImport';
 
   function showPage(page) {
+    if (!pageConfig[page]) page = 'asoImport';
     currentPage = page;
+    sessionStorage.setItem('currentPage', page);
 
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
     const pageEl = document.getElementById(page + 'Page');
@@ -503,6 +1139,15 @@
     renderAsoRelatorios();
     renderMonitorPanel();
     renderHistorico();
+    renderEsocialQueue();
+    renderImportTrackingPanels();
+    if (page === 'asoEsocial') loadEsocialQueue();
+  }
+
+  function refreshPage() {
+    const btn = document.getElementById('refreshBtn');
+    if (btn) btn.classList.add('is-spinning');
+    setTimeout(() => window.location.reload(), 180);
   }
 
   function logout() {
@@ -510,6 +1155,7 @@
     sessionStorage.removeItem('apiUser');
     sessionStorage.removeItem('apiPass');
     sessionStorage.removeItem('apiBearerToken');
+    sessionStorage.removeItem('currentPage');
     window.location.href = 'login.html';
   }
 
@@ -578,15 +1224,94 @@
     URL.revokeObjectURL(url);
   }
 
+  function escapeHtml(text) {
+    if (typeof text !== 'string') return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function showErrorDetail(error) {
+    const modalTitle = document.getElementById('recordModalTitle');
+    const modalSubtitle = document.getElementById('recordModalSubtitle');
+    const modalBody = document.getElementById('recordModalBody');
+    
+    if (modalTitle && modalSubtitle && modalBody) {
+      modalTitle.innerText = `Detalhes do Erro`;
+      modalSubtitle.innerText = `${error.tipo} • ${formatDateTime(error.ts)}`;
+      
+      modalBody.innerHTML = `
+        <div class="error-detail">
+          <div class="error-detail__title">Mensagem de Erro</div>
+          <div class="error-detail__content">${escapeHtml(error.mensagem || '')}</div>
+        </div>
+        <div class="kv">
+          <div class="kv__item">
+            <div class="kv__k">Chave</div>
+            <div class="kv__v">${escapeHtml(error.chave || '')}</div>
+          </div>
+          <div class="kv__item">
+            <div class="kv__k">Tipo</div>
+            <div class="kv__v">${escapeHtml(error.tipo || '')}</div>
+          </div>
+          <div class="kv__item">
+            <div class="kv__k">Data/Hora</div>
+            <div class="kv__v">${formatDateTime(error.ts)}</div>
+          </div>
+          <div class="kv__item">
+            <div class="kv__k">Usuário</div>
+            <div class="kv__v">${escapeHtml(error.user || '')}</div>
+          </div>
+          <div class="kv__item">
+            <div class="kv__k">ID Execução</div>
+            <div class="kv__v">${escapeHtml(error.runId || '')}</div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('recordModalOverlay').classList.remove('hidden');
+    }
+  }
+
   function renderMonitorPanel() {
     const statusEl = document.getElementById('monCurrentStatus');
     const barEl = document.getElementById('monCurrentBar');
     const subEl = document.getElementById('monCurrentSub');
+    const progressEl = document.getElementById('monProgress');
+    const liveDotEl = document.getElementById('monLiveDot');
+    const stepCompareEl = document.getElementById('monStepCompare');
+    const stepCapaEl = document.getElementById('monStepCapa');
+    const stepExamesEl = document.getElementById('monStepExames');
+    const rateEl = document.getElementById('monRate');
+    const elapsedEl = document.getElementById('monElapsed');
+    const etaEl = document.getElementById('monEta');
     const sumCompareEl = document.getElementById('monSumCompare');
     const sumCapaEl = document.getElementById('monSumCapa');
     const sumExamesEl = document.getElementById('monSumExames');
+    const totalEl = document.getElementById('monTotal');
+    const processedEl = document.getElementById('monProcessed');
+    const pendingEl = document.getElementById('monPending');
+    const errorsEl = document.getElementById('monErrors');
     const bodyEl = document.getElementById('monErrorBody');
     if (!statusEl || !barEl || !subEl || !sumCompareEl || !sumCapaEl || !sumExamesEl || !bodyEl) return;
+
+    const fmtDuration = (sec) => {
+      const s = Math.max(0, Math.floor(Number(sec || 0)));
+      const hh = Math.floor(s / 3600);
+      const mm = Math.floor((s % 3600) / 60);
+      const ss = s % 60;
+      if (hh > 0) return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+    };
+
+    const setStepState = (el, state) => {
+      if (!el) return;
+      el.classList.toggle('is-active', state === 'active');
+      el.classList.toggle('is-done', state === 'done');
+    };
 
     const compare = monitorSummary?.comparacao || { total: 0, ok: 0, fail: 0 };
     const capa = monitorSummary?.capa || { total: 0, ok: 0, fail: 0 };
@@ -595,6 +1320,41 @@
     sumCompareEl.innerText = `${compare.ok || 0}/${compare.total || 0}`;
     sumCapaEl.innerText = `${capa.ok || 0}/${capa.fail || 0}`;
     sumExamesEl.innerText = `${exames.ok || 0}/${exames.fail || 0}`;
+
+    const total = Number(compare.total || 0) + Number(capa.total || 0) + Number(exames.total || 0);
+    const ok = Number(compare.ok || 0) + Number(capa.ok || 0) + Number(exames.ok || 0);
+    const fail = Number(compare.fail || 0) + Number(capa.fail || 0) + Number(exames.fail || 0);
+    const pend = Math.max(0, total - ok - fail);
+    if (totalEl) totalEl.innerText = String(total);
+    if (processedEl) processedEl.innerText = String(ok);
+    if (pendingEl) pendingEl.innerText = String(pend);
+    if (errorsEl) errorsEl.innerText = String(fail);
+    
+    // Atualizar gráficos visuais
+    const capaChartOkEl = document.getElementById('monChartCapaOk');
+    const capaChartFailEl = document.getElementById('monChartCapaFail');
+    const capaChartValueEl = document.getElementById('monChartCapaValue');
+    const exChartOkEl = document.getElementById('monChartExOk');
+    const exChartFailEl = document.getElementById('monChartExFail');
+    const exChartValueEl = document.getElementById('monChartExValue');
+    
+    if (capaChartOkEl && capaChartFailEl && capaChartValueEl) {
+      const capaTotal = Math.max(1, capa.ok + capa.fail);
+      const capaOkPct = Math.round((capa.ok / capaTotal) * 100);
+      const capaFailPct = Math.round((capa.fail / capaTotal) * 100);
+      capaChartOkEl.style.width = `${capaOkPct}%`;
+      capaChartFailEl.style.width = `${capaFailPct}%`;
+      capaChartValueEl.innerText = `${capa.ok}/${capa.fail}`;
+    }
+    
+    if (exChartOkEl && exChartFailEl && exChartValueEl) {
+      const exTotal = Math.max(1, exames.ok + exames.fail);
+      const exOkPct = Math.round((exames.ok / exTotal) * 100);
+      const exFailPct = Math.round((exames.fail / exTotal) * 100);
+      exChartOkEl.style.width = `${exOkPct}%`;
+      exChartFailEl.style.width = `${exFailPct}%`;
+      exChartValueEl.innerText = `${exames.ok}/${exames.fail}`;
+    }
 
     const active =
       consultStatus?.running
@@ -607,6 +1367,14 @@
       statusEl.innerText = 'Parado';
       barEl.style.width = '0%';
       subEl.innerText = '';
+      if (progressEl) progressEl.classList.remove('progress--running');
+      if (liveDotEl) liveDotEl.classList.add('hidden');
+      setStepState(stepCompareEl, 'idle');
+      setStepState(stepCapaEl, 'idle');
+      setStepState(stepExamesEl, 'idle');
+      if (rateEl) rateEl.innerText = '-';
+      if (elapsedEl) elapsedEl.innerText = '-';
+      if (etaEl) etaEl.innerText = '-';
     } else {
       const total = Math.max(1, Number(active.total || 1));
       const done = Math.min(total, Number(active.done || 0));
@@ -616,12 +1384,43 @@
       const startedAt = Number(active.startedAt || 0);
       const elapsedMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
       const elapsedSec = Math.floor(elapsedMs / 1000);
-      const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
-      const ss = String(elapsedSec % 60).padStart(2, '0');
-      subEl.innerText = `${done}/${total} • ok ${Number(active.ok || 0)} • falhas ${Number(active.fail || 0)} • tempo ${mm}:${ss}`;
+      subEl.innerText = `${done}/${total} • ok ${Number(active.ok || 0)} • falhas ${Number(active.fail || 0)}`;
+      if (progressEl) progressEl.classList.add('progress--running');
+      if (liveDotEl) liveDotEl.classList.remove('hidden');
+
+      const rate = elapsedSec > 0 ? done / elapsedSec : 0;
+      if (rateEl) rateEl.innerText = rate > 0 ? `${rate.toFixed(1)}/s` : '-';
+      if (elapsedEl) elapsedEl.innerText = fmtDuration(elapsedSec);
+      if (etaEl) {
+        if (rate > 0 && total > done) etaEl.innerText = fmtDuration((total - done) / rate);
+        else etaEl.innerText = '-';
+      }
+
+      const runningCompare = Boolean(consultStatus?.running);
+      const runningIntegrate = Boolean(integrateStatus?.running);
+      const phase = runningIntegrate ? String(integrateStatus?.phase || '') : (runningCompare ? 'comparacao' : '');
+      if (runningCompare) {
+        setStepState(stepCompareEl, 'active');
+        setStepState(stepCapaEl, 'idle');
+        setStepState(stepExamesEl, 'idle');
+      } else if (runningIntegrate && phase === 'capa') {
+        setStepState(stepCompareEl, 'done');
+        setStepState(stepCapaEl, 'active');
+        setStepState(stepExamesEl, 'idle');
+      } else if (runningIntegrate && phase === 'exames') {
+        setStepState(stepCompareEl, 'done');
+        setStepState(stepCapaEl, 'done');
+        setStepState(stepExamesEl, 'active');
+      } else {
+        setStepState(stepCompareEl, 'idle');
+        setStepState(stepCapaEl, 'idle');
+        setStepState(stepExamesEl, 'idle');
+      }
     }
 
     const filter = document.getElementById('monErrorFilter')?.value || 'all';
+    const limitRaw = document.getElementById('monErrorLimit')?.value || '200';
+    const limit = Math.max(1, Math.min(800, Number(limitRaw) || 200));
     const term = (document.getElementById('monErrorSearch')?.value || '').toLowerCase();
     const filtered = monitorErrors.filter(e => {
       if (filter !== 'all' && e.tipo !== filter) return false;
@@ -629,10 +1428,15 @@
       return `${e.tipo} ${e.chave} ${e.mensagem}`.toLowerCase().includes(term);
     });
 
-    const limited = filtered.slice(0, 200);
+    const limited = filtered.slice(0, limit);
     bodyEl.innerHTML = '';
     limited.forEach(e => {
       const tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      tr.tabIndex = 0;
+      tr.onclick = () => showErrorDetail(e);
+      tr.onkeydown = (ev) => { if (ev.key === 'Enter') showErrorDetail(e); };
+      
       const cols = [formatDateTime(e.ts), e.tipo, e.chave, e.mensagem];
       cols.forEach(v => {
         const td = document.createElement('td');
@@ -641,6 +1445,400 @@
       });
       bodyEl.appendChild(tr);
     });
+  }
+
+  let historicoChartsInit = false;
+  let historicoChartsHover = { pie: -1, bar: -1 };
+  let historicoChartsGeom = { pie: [], bar: [] };
+  let historicoChartsData = { pie: [], pieTotal: 0, bars: [], barMax: 0 };
+
+  function getHistoricoKindLabel(kind) {
+    const k = String(kind || '').toLowerCase().trim();
+    if (k === 'comparacao') return 'Comparação';
+    if (k === 'capa') return 'Capa';
+    if (k === 'exames') return 'Exames';
+    if (!k) return 'Desconhecido';
+    return k.charAt(0).toUpperCase() + k.slice(1);
+  }
+
+  function getHistoricoKindColor(kind) {
+    const k = String(kind || '').toLowerCase().trim();
+    if (k === 'comparacao') return '#6c8cff';
+    if (k === 'capa') return '#b47cff';
+    if (k === 'exames') return '#34d399';
+    return '#9aa4bf';
+  }
+
+  function drawHistoricoPie(canvas, entries, total, hoveredIdx) {
+    if (!canvas) return;
+    const sized = getCanvasCtx(canvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const rOuter = Math.min(cx, cy) - 8;
+    const rInner = rOuter * 0.6;
+
+    const geom = [];
+    let start = -Math.PI / 2;
+    entries.forEach((e, idx) => {
+      const angle = (e.count / Math.max(1, total)) * Math.PI * 2;
+      const end = start + angle;
+      const isHover = idx === hoveredIdx;
+      const pop = isHover ? 6 : 0;
+      const ro = rOuter + pop;
+      const ri = rInner;
+      const color = e.color;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(cx, cy - ro, cx, cy + ro);
+      grad.addColorStop(0, mixColor(color, '#ffffff', 0.18));
+      grad.addColorStop(1, mixColor(color, '#000000', 0.08));
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = hoveredIdx === -1 || isHover ? 1 : 0.45;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      const startNorm = ((start - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const endNorm = ((end - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      geom.push({ idx, start: startNorm, end: endNorm });
+      start = end;
+    });
+    historicoChartsGeom.pie = geom;
+  }
+
+  function drawHistoricoBar(canvas, bars, hoveredIdx) {
+    if (!canvas) return;
+    const sized = getCanvasCtx(canvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+    const padX = 22;
+    const padTop = 18;
+    const padBottom = 48;
+    const chartW = w - padX * 2;
+    const chartH = h - padTop - padBottom;
+    const max = Math.max(...bars.map(b => b.count), 1);
+    const step = chartW / Math.max(1, bars.length);
+    const bw = step * 0.66;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75, 1].forEach(p => {
+      const y = padTop + chartH * p;
+      ctx.beginPath();
+      ctx.moveTo(padX, y);
+      ctx.lineTo(padX + chartW, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    const geom = [];
+    bars.forEach((b, i) => {
+      const x = padX + i * step + (step - bw) / 2;
+      const bh = (b.count / max) * chartH;
+      const y = padTop + (chartH - bh);
+      const isHover = i === hoveredIdx;
+      const color = b.color;
+
+      ctx.save();
+      ctx.globalAlpha = hoveredIdx === -1 || isHover ? 1 : 0.45;
+      const grad = ctx.createLinearGradient(0, y, 0, y + bh);
+      grad.addColorStop(0, mixColor(color, '#ffffff', 0.20));
+      grad.addColorStop(1, mixColor(color, '#000000', 0.10));
+      ctx.fillStyle = grad;
+      roundRectPath(ctx, x, y, bw, bh, 8);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      roundRectPath(ctx, x, y, bw, bh, 8);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#e3e8ee';
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(b.count), x + bw / 2, y - 6);
+      ctx.fillStyle = '#9aa4bf';
+      ctx.font = '11px Inter';
+      ctx.fillText(b.label, x + bw / 2, padTop + chartH + 28);
+      ctx.restore();
+
+      geom.push({ idx: i, x, y, w: bw, h: bh });
+    });
+    historicoChartsGeom.bar = geom;
+  }
+
+  function initHistoricoChartsInteractions() {
+    if (historicoChartsInit) return;
+    historicoChartsInit = true;
+
+    const pie = document.getElementById('histPieCanvas');
+    const bar = document.getElementById('histBarCanvas');
+    const pieLegend = document.getElementById('histPieLegend');
+    const barLegend = document.getElementById('histBarLegend');
+
+    const onPieMove = (ev) => {
+      if (!pie || !historicoChartsData.pie.length) return;
+      const rect = pie.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const rOuter = Math.min(cx, cy) - 8;
+      const rInner = rOuter * 0.6;
+      if (r < rInner || r > rOuter + 10) {
+        if (historicoChartsHover.pie !== -1) {
+          historicoChartsHover.pie = -1;
+          drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, -1);
+        }
+        hideChartTooltip();
+        return;
+      }
+      let ang = Math.atan2(dy, dx);
+      ang = ((ang - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const hit = historicoChartsGeom.pie.find(s => {
+        if (s.start <= s.end) return ang >= s.start && ang <= s.end;
+        return ang >= s.start || ang <= s.end;
+      });
+      const idx = hit ? hit.idx : -1;
+      if (idx !== historicoChartsHover.pie) {
+        historicoChartsHover.pie = idx;
+        drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, idx);
+      }
+      if (idx >= 0) {
+        const e = historicoChartsData.pie[idx];
+        const pct = historicoChartsData.pieTotal ? Math.round((e.count / historicoChartsData.pieTotal) * 100) : 0;
+        showChartTooltip(`${e.full} • ${e.count} (${pct}%)`, ev.clientX, ev.clientY);
+      } else {
+        hideChartTooltip();
+      }
+    };
+
+    const onPieLeave = () => {
+      if (!pie) return;
+      if (historicoChartsHover.pie !== -1) {
+        historicoChartsHover.pie = -1;
+        drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, -1);
+      }
+      hideChartTooltip();
+    };
+
+    if (pie) {
+      pie.addEventListener('mousemove', onPieMove);
+      pie.addEventListener('mouseleave', onPieLeave);
+    }
+
+    const onBarMove = (ev) => {
+      if (!bar || !historicoChartsData.bars.length) return;
+      const rect = bar.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const hit = historicoChartsGeom.bar.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      const idx = hit ? hit.idx : -1;
+      if (idx !== historicoChartsHover.bar) {
+        historicoChartsHover.bar = idx;
+        drawHistoricoBar(bar, historicoChartsData.bars, idx);
+      }
+      if (idx >= 0) {
+        const b = historicoChartsData.bars[idx];
+        showChartTooltip(`${b.full} • ${b.count}`, ev.clientX, ev.clientY);
+      } else {
+        hideChartTooltip();
+      }
+    };
+
+    const onBarLeave = () => {
+      if (!bar) return;
+      if (historicoChartsHover.bar !== -1) {
+        historicoChartsHover.bar = -1;
+        drawHistoricoBar(bar, historicoChartsData.bars, -1);
+      }
+      hideChartTooltip();
+    };
+
+    if (bar) {
+      bar.addEventListener('mousemove', onBarMove);
+      bar.addEventListener('mouseleave', onBarLeave);
+    }
+
+    const wireLegend = () => {
+      if (pieLegend) {
+        Array.from(pieLegend.querySelectorAll('.pie-legend__item')).forEach((row) => {
+          const idx = Number(row.getAttribute('data-idx') || '-1');
+          if (Number.isNaN(idx) || idx < 0) return;
+          row.onmouseenter = () => {
+            if (!pie) return;
+            historicoChartsHover.pie = idx;
+            drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, idx);
+          };
+          row.onmouseleave = () => {
+            if (!pie) return;
+            historicoChartsHover.pie = -1;
+            drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, -1);
+          };
+          row.onclick = () => {
+            const e = historicoChartsData.pie[idx];
+            if (!e) return;
+            const sel = document.getElementById('histFilter');
+            if (!sel) return;
+            const key = String(e.key || '');
+            sel.value = ['comparacao', 'capa', 'exames'].includes(key) ? key : 'all';
+            renderHistorico();
+          };
+        });
+      }
+      if (barLegend) {
+        Array.from(barLegend.querySelectorAll('.bar-legend__item')).forEach((row) => {
+          const idx = Number(row.getAttribute('data-idx') || '-1');
+          if (Number.isNaN(idx) || idx < 0) return;
+          row.onmouseenter = () => {
+            if (!bar) return;
+            historicoChartsHover.bar = idx;
+            drawHistoricoBar(bar, historicoChartsData.bars, idx);
+          };
+          row.onmouseleave = () => {
+            if (!bar) return;
+            historicoChartsHover.bar = -1;
+            drawHistoricoBar(bar, historicoChartsData.bars, -1);
+          };
+        });
+      }
+    };
+
+    const ro = 'ResizeObserver' in window ? new ResizeObserver(() => {
+      const pie2 = document.getElementById('histPieCanvas');
+      const bar2 = document.getElementById('histBarCanvas');
+      if (pie2) drawHistoricoPie(pie2, historicoChartsData.pie, historicoChartsData.pieTotal, historicoChartsHover.pie);
+      if (bar2) drawHistoricoBar(bar2, historicoChartsData.bars, historicoChartsHover.bar);
+      wireLegend();
+    }) : null;
+
+    if (ro) {
+      if (pie) ro.observe(pie);
+      if (bar) ro.observe(bar);
+    }
+
+    window.setTimeout(wireLegend, 0);
+  }
+
+  function renderHistoricoCharts() {
+    const pageEl = document.getElementById('asoHistoricoPage');
+    if (pageEl && pageEl.classList.contains('hidden')) return;
+
+    const pie = document.getElementById('histPieCanvas');
+    const pieLegend = document.getElementById('histPieLegend');
+    const bar = document.getElementById('histBarCanvas');
+    const barLegend = document.getElementById('histBarLegend');
+    if (!pie || !pieLegend || !bar || !barLegend) return;
+
+    const counts = new Map();
+    (Array.isArray(historyRuns) ? historyRuns : []).forEach(r => {
+      const k = String(r?.kind || '').toLowerCase().trim() || 'desconhecido';
+      counts.set(k, (counts.get(k) || 0) + 1);
+    });
+    const pieEntries = Array.from(counts.entries())
+      .map(([key, count]) => ({ key, full: getHistoricoKindLabel(key), count: Number(count || 0), color: getHistoricoKindColor(key) }))
+      .filter(e => e.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    const pieTotal = pieEntries.reduce((s, e) => s + e.count, 0);
+    historicoChartsData.pie = pieEntries;
+    historicoChartsData.pieTotal = pieTotal;
+
+    pieLegend.innerHTML = '';
+    if (!pieEntries.length) {
+      const tr = document.createElement('div');
+      tr.className = 'muted';
+      tr.textContent = 'Nenhum dado disponível';
+      pieLegend.appendChild(tr);
+    } else {
+      pieEntries.forEach((e, idx) => {
+        const pct = pieTotal ? Math.round((e.count / pieTotal) * 100) : 0;
+        const row = document.createElement('div');
+        row.className = 'pie-legend__item';
+        row.setAttribute('data-idx', String(idx));
+        row.innerHTML = `<span class="pie-legend__dot" style="background:${e.color}"></span><span>${e.full}</span><span class="meta" style="margin-left:auto">${e.count} (${pct}%)</span>`;
+        row.onmouseenter = () => {
+          historicoChartsHover.pie = idx;
+          drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, idx);
+        };
+        row.onmouseleave = () => {
+          historicoChartsHover.pie = -1;
+          drawHistoricoPie(pie, historicoChartsData.pie, historicoChartsData.pieTotal, -1);
+        };
+        row.onclick = () => {
+          const sel = document.getElementById('histFilter');
+          if (!sel) return;
+          sel.value = ['comparacao', 'capa', 'exames'].includes(String(e.key || '')) ? String(e.key) : 'all';
+          renderHistorico();
+        };
+        pieLegend.appendChild(row);
+      });
+    }
+
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().slice(0, 10);
+    }).reverse();
+    const dailyCounts = new Map(last7Days.map(d => [d, 0]));
+    (Array.isArray(historyRuns) ? historyRuns : []).forEach(r => {
+      const dt = new Date(r?.startedAt || r?.finishedAt || Date.now()).toISOString().slice(0, 10);
+      if (!dailyCounts.has(dt)) return;
+      dailyCounts.set(dt, (dailyCounts.get(dt) || 0) + 1);
+    });
+    const bars = last7Days.map(d => {
+      const count = Number(dailyCounts.get(d) || 0);
+      return { full: d, label: d.slice(5), count, color: '#6c8cff' };
+    });
+    historicoChartsData.bars = bars;
+    historicoChartsData.barMax = Math.max(...bars.map(b => b.count), 1);
+
+    barLegend.innerHTML = '';
+    bars.slice().reverse().forEach((b, i) => {
+      const idx = bars.length - 1 - i;
+      const item = document.createElement('div');
+      item.className = 'bar-legend__item';
+      item.setAttribute('data-idx', String(idx));
+      item.innerHTML = `<div class="bar-legend__color" style="background:${b.color}"></div><div>${b.label} • ${b.count}</div>`;
+      item.onmouseenter = () => {
+        historicoChartsHover.bar = idx;
+        drawHistoricoBar(bar, historicoChartsData.bars, idx);
+      };
+      item.onmouseleave = () => {
+        historicoChartsHover.bar = -1;
+        drawHistoricoBar(bar, historicoChartsData.bars, -1);
+      };
+      barLegend.appendChild(item);
+    });
+
+    initHistoricoChartsInteractions();
+    drawHistoricoPie(pie, pieEntries, pieTotal, historicoChartsHover.pie);
+    drawHistoricoBar(bar, bars, historicoChartsHover.bar);
   }
 
   function persistHistoryRuns() {
@@ -684,6 +1882,16 @@
     });
   }
 
+  async function idbDel(key) {
+    const db = await openErpAsoDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   async function saveLastContext() {
     if (!rawContext) return;
     const toSave = {
@@ -706,6 +1914,7 @@
       buildMappingUI();
       currentListPage = 1;
       rebuildAndRender(true);
+      renderImportTrackingPanels();
       showToast('Planilha restaurada', 'success');
     } catch {
       return;
@@ -898,17 +2107,428 @@
     }
   }
 
-  function renderHistorico() {
-    const countEl = document.getElementById('histCount');
-    const userEl = document.getElementById('histUser');
-    const lastEl = document.getElementById('histLast');
-    const bodyEl = document.getElementById('histBody');
-    if (!countEl || !userEl || !lastEl || !bodyEl) return;
+  const importTrackingKey = 'erpAsoImportTrackingSnapshot';
 
-    countEl.innerText = String(historyRuns.length);
-    const first = historyRuns[0] || null;
-    userEl.innerText = first?.user ? String(first.user) : '-';
-    lastEl.innerText = first?.kind ? String(first.kind) : '-';
+  function loadImportTrackingSnapshot() {
+    try {
+      const raw = localStorage.getItem(importTrackingKey) || '';
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveImportTrackingSnapshot(snapshot) {
+    try {
+      localStorage.setItem(importTrackingKey, JSON.stringify(snapshot || {}));
+    } catch {}
+  }
+
+  function resetImportTrackingSnapshot(fileName) {
+    const snap = { fileName: String(fileName || ''), updatedAt: Date.now(), comparacao: null, capa: null, exames: null };
+    saveImportTrackingSnapshot(snap);
+  }
+
+  function clonePhaseStatus(status) {
+    if (!status || typeof status !== 'object') return null;
+    return {
+      running: Boolean(status.running),
+      done: Number(status.done || 0),
+      total: Number(status.total || 0),
+      ok: Number(status.ok || 0),
+      fail: Number(status.fail || 0),
+      startedAt: Number(status.startedAt || 0)
+    };
+  }
+
+  function updateImportTrackingSnapshotFromLive() {
+    const prev = loadImportTrackingSnapshot() || {};
+    const now = Date.now();
+    const snap = {
+      fileName: String(rawContext?.fileName || prev.fileName || ''),
+      updatedAt: now,
+      comparacao: prev.comparacao || null,
+      capa: prev.capa || null,
+      exames: prev.exames || null
+    };
+
+    const c = clonePhaseStatus(consultStatus);
+    if (c && (c.total > 0 || snap.comparacao)) {
+      const prevC = snap.comparacao || null;
+      const merged = { ...(prevC || {}), ...c };
+      const total = Math.max(0, Number(merged.total || 0));
+      const done = Math.max(0, Math.min(total || 0, Number(merged.done || 0)));
+      const startedAt = Number(merged.startedAt || 0);
+      if (total > 0 && startedAt > 0) {
+        const wasRunning = Boolean(prevC?.running);
+        const isRunning = Boolean(merged.running);
+        const elapsedSec = Math.floor(Math.max(0, now - startedAt) / 1000);
+        if (isRunning || wasRunning) {
+          const rate = elapsedSec > 0 ? done / elapsedSec : 0;
+          const etaSec = rate > 0 && total > done ? (total - done) / rate : 0;
+          merged.lastElapsedSec = elapsedSec;
+          merged.lastRate = rate;
+          merged.lastEtaSec = etaSec;
+          merged.lastUpdatedAt = now;
+          if (!isRunning && wasRunning) merged.finishedAt = now;
+        }
+      }
+      snap.comparacao = merged;
+    }
+
+    const i = clonePhaseStatus(integrateStatus);
+    const phase = String(integrateStatus?.phase || '').toLowerCase();
+    if (i && (i.total > 0 || phase)) {
+      if (phase === 'capa') {
+        const prevP = snap.capa || null;
+        const merged = { ...(prevP || {}), ...i };
+        const total = Math.max(0, Number(merged.total || 0));
+        const done = Math.max(0, Math.min(total || 0, Number(merged.done || 0)));
+        const startedAt = Number(merged.startedAt || 0);
+        if (total > 0 && startedAt > 0) {
+          const wasRunning = Boolean(prevP?.running);
+          const isRunning = Boolean(merged.running);
+          const elapsedSec = Math.floor(Math.max(0, now - startedAt) / 1000);
+          if (isRunning || wasRunning) {
+            const rate = elapsedSec > 0 ? done / elapsedSec : 0;
+            const etaSec = rate > 0 && total > done ? (total - done) / rate : 0;
+            merged.lastElapsedSec = elapsedSec;
+            merged.lastRate = rate;
+            merged.lastEtaSec = etaSec;
+            merged.lastUpdatedAt = now;
+            if (!isRunning && wasRunning) merged.finishedAt = now;
+          }
+        }
+        snap.capa = merged;
+      }
+      if (phase === 'exames') {
+        const prevP = snap.exames || null;
+        const merged = { ...(prevP || {}), ...i };
+        const total = Math.max(0, Number(merged.total || 0));
+        const done = Math.max(0, Math.min(total || 0, Number(merged.done || 0)));
+        const startedAt = Number(merged.startedAt || 0);
+        if (total > 0 && startedAt > 0) {
+          const wasRunning = Boolean(prevP?.running);
+          const isRunning = Boolean(merged.running);
+          const elapsedSec = Math.floor(Math.max(0, now - startedAt) / 1000);
+          if (isRunning || wasRunning) {
+            const rate = elapsedSec > 0 ? done / elapsedSec : 0;
+            const etaSec = rate > 0 && total > done ? (total - done) / rate : 0;
+            merged.lastElapsedSec = elapsedSec;
+            merged.lastRate = rate;
+            merged.lastEtaSec = etaSec;
+            merged.lastUpdatedAt = now;
+            if (!isRunning && wasRunning) merged.finishedAt = now;
+          }
+        }
+        snap.exames = merged;
+      }
+    }
+
+    saveImportTrackingSnapshot(snap);
+    return snap;
+  }
+
+  function fmtDuration(sec) {
+    const s = Math.max(0, Math.floor(Number(sec || 0)));
+    const hh = Math.floor(s / 3600);
+    const mm = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    if (hh > 0) return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  }
+
+  function renderImportPhase(prefix, title, status) {
+    const dot = document.getElementById(prefix + 'Dot');
+    const statusEl = document.getElementById(prefix + 'Status');
+    const progressEl = document.getElementById(prefix + 'Progress');
+    const bar = document.getElementById(prefix + 'Bar');
+    const sub = document.getElementById(prefix + 'Sub');
+    const rateEl = document.getElementById(prefix + 'Rate');
+    const elapsedEl = document.getElementById(prefix + 'Elapsed');
+    const etaEl = document.getElementById(prefix + 'Eta');
+    if (!statusEl || !progressEl || !bar || !sub || !rateEl || !elapsedEl || !etaEl || !dot) return;
+
+    const total = Math.max(0, Number(status?.total || 0));
+    const done = Math.max(0, Math.min(total || 0, Number(status?.done || 0)));
+    const ok = Math.max(0, Number(status?.ok || 0));
+    const fail = Math.max(0, Number(status?.fail || 0));
+    const running = Boolean(status?.running);
+    const startedAt = Number(status?.startedAt || 0);
+    const now = Date.now();
+    const elapsedSec = startedAt ? Math.floor(Math.max(0, now - startedAt) / 1000) : 0;
+    const rate = elapsedSec > 0 ? done / elapsedSec : 0;
+    const pct = total > 0 ? Math.max(0, Math.min(100, Math.round((done / Math.max(1, total)) * 100))) : 0;
+
+    if (!total) {
+      statusEl.innerText = 'Aguardando';
+      bar.style.width = '0%';
+      sub.innerText = '';
+      rateEl.innerText = '-';
+      elapsedEl.innerText = '-';
+      etaEl.innerText = '-';
+      dot.classList.add('hidden');
+      progressEl.classList.remove('progress--running');
+      return;
+    }
+
+    const suffix = running ? ` • ${pct}%` : (pct >= 100 ? ' • Concluído' : ` • ${pct}%`);
+    statusEl.innerText = `${title}${suffix}`;
+    bar.style.width = `${pct}%`;
+    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail}`;
+
+    if (running) {
+      dot.classList.remove('hidden');
+      progressEl.classList.add('progress--running');
+      rateEl.innerText = rate > 0 ? `${rate.toFixed(1)}/s` : '0.0/s';
+      elapsedEl.innerText = fmtDuration(elapsedSec);
+      etaEl.innerText = rate > 0 && total > done ? fmtDuration((total - done) / rate) : '00:00';
+    } else {
+      dot.classList.add('hidden');
+      progressEl.classList.remove('progress--running');
+      const lastRate = Number(status?.lastRate);
+      const lastElapsed = Number(status?.lastElapsedSec);
+      const lastEta = Number(status?.lastEtaSec);
+      if (Number.isFinite(lastRate)) rateEl.innerText = `${lastRate.toFixed(1)}/s`;
+      else rateEl.innerText = rate > 0 ? `${rate.toFixed(1)}/s` : '0.0/s';
+      if (Number.isFinite(lastElapsed)) elapsedEl.innerText = fmtDuration(lastElapsed);
+      else elapsedEl.innerText = startedAt ? fmtDuration(elapsedSec) : '-';
+      if (Number.isFinite(lastEta)) etaEl.innerText = fmtDuration(lastEta);
+      else etaEl.innerText = total > 0 && done >= total ? '00:00' : '-';
+    }
+  }
+
+  function renderImportTrackingPanels() {
+    const wrap = document.getElementById('importTrackingPanels');
+    if (!wrap) return;
+    const snap = updateImportTrackingSnapshotFromLive() || loadImportTrackingSnapshot();
+    const hasAny = Boolean(snap?.comparacao?.total || snap?.capa?.total || snap?.exames?.total);
+    const hasFile = Boolean(rawContext?.fileName);
+    const hasSnap = Boolean(snap && (snap.fileName || hasAny));
+    if (!hasSnap && !hasFile) {
+      wrap.classList.add('hidden');
+      return;
+    }
+    wrap.classList.remove('hidden');
+    renderImportPhase('impCompare', 'Comparação', snap?.comparacao);
+    renderImportPhase('impCapa', 'Integração Capa', snap?.capa);
+    renderImportPhase('impExames', 'Integração Exames', snap?.exames);
+  }
+
+  let reportChartsInit = false;
+  let reportChartsHover = { pie: -1 };
+  let reportChartsGeom = { pie: [] };
+  let reportChartsData = { pie: [], total: 0 };
+
+  function drawReportPie(canvas, entries, total, hoveredIdx) {
+    if (!canvas) return;
+    const sized = getCanvasCtx(canvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const rOuter = Math.min(cx, cy) - 8;
+    const rInner = rOuter * 0.6;
+
+    const geom = [];
+    let start = -Math.PI / 2;
+    entries.forEach((e, idx) => {
+      const angle = (e.count / Math.max(1, total)) * Math.PI * 2;
+      const end = start + angle;
+      const isHover = idx === hoveredIdx;
+      const pop = isHover ? 6 : 0;
+      const ro = rOuter + pop;
+      const ri = rInner;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(cx, cy - ro, cx, cy + ro);
+      grad.addColorStop(0, mixColor(e.color, '#ffffff', 0.18));
+      grad.addColorStop(1, mixColor(e.color, '#000000', 0.08));
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = hoveredIdx === -1 || isHover ? 1 : 0.45;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      const startNorm = ((start - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const endNorm = ((end - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      geom.push({ idx, start: startNorm, end: endNorm });
+      start = end;
+    });
+    reportChartsGeom.pie = geom;
+  }
+
+  function initReportChartsInteractions() {
+    if (reportChartsInit) return;
+    reportChartsInit = true;
+
+    const pie = document.getElementById('reportPieCanvas');
+    const legend = document.getElementById('reportPieLegend');
+    const totalEl = document.getElementById('reportPieTotal');
+
+    const onMove = (ev) => {
+      if (!pie || !reportChartsData.pie.length) return;
+      const rect = pie.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const rOuter = Math.min(cx, cy) - 8;
+      const rInner = rOuter * 0.6;
+      if (r < rInner || r > rOuter + 10) {
+        if (reportChartsHover.pie !== -1) {
+          reportChartsHover.pie = -1;
+          drawReportPie(pie, reportChartsData.pie, reportChartsData.total, -1);
+        }
+        hideChartTooltip();
+        return;
+      }
+      let ang = Math.atan2(dy, dx);
+      ang = ((ang - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const hit = reportChartsGeom.pie.find(s => {
+        if (s.start <= s.end) return ang >= s.start && ang <= s.end;
+        return ang >= s.start || ang <= s.end;
+      });
+      const idx = hit ? hit.idx : -1;
+      if (idx !== reportChartsHover.pie) {
+        reportChartsHover.pie = idx;
+        drawReportPie(pie, reportChartsData.pie, reportChartsData.total, idx);
+      }
+      if (idx >= 0) {
+        const e = reportChartsData.pie[idx];
+        const pct = reportChartsData.total ? Math.round((e.count / reportChartsData.total) * 100) : 0;
+        showChartTooltip(`${e.full} • ${e.count} (${pct}%)`, ev.clientX, ev.clientY);
+      } else {
+        hideChartTooltip();
+      }
+    };
+
+    const onLeave = () => {
+      if (!pie) return;
+      if (reportChartsHover.pie !== -1) {
+        reportChartsHover.pie = -1;
+        drawReportPie(pie, reportChartsData.pie, reportChartsData.total, -1);
+      }
+      hideChartTooltip();
+    };
+
+    if (pie) {
+      pie.addEventListener('mousemove', onMove);
+      pie.addEventListener('mouseleave', onLeave);
+    }
+
+    const wireLegend = () => {
+      if (!legend) return;
+      Array.from(legend.querySelectorAll('.pie-legend__item')).forEach((row) => {
+        const idx = Number(row.getAttribute('data-idx') || '-1');
+        if (Number.isNaN(idx) || idx < 0) return;
+        row.onmouseenter = () => {
+          if (!pie) return;
+          reportChartsHover.pie = idx;
+          drawReportPie(pie, reportChartsData.pie, reportChartsData.total, idx);
+        };
+        row.onmouseleave = () => {
+          if (!pie) return;
+          reportChartsHover.pie = -1;
+          drawReportPie(pie, reportChartsData.pie, reportChartsData.total, -1);
+        };
+      });
+    };
+
+    const ro = 'ResizeObserver' in window ? new ResizeObserver(() => {
+      const pie2 = document.getElementById('reportPieCanvas');
+      if (pie2) drawReportPie(pie2, reportChartsData.pie, reportChartsData.total, reportChartsHover.pie);
+      wireLegend();
+      if (totalEl) totalEl.textContent = String(reportChartsData.total || 0);
+    }) : null;
+
+    if (ro && pie) ro.observe(pie);
+    window.setTimeout(wireLegend, 0);
+  }
+
+  function renderReportParecerChart(apto, inapto, indef) {
+    const pageEl = document.getElementById('asoRelatoriosPage');
+    if (pageEl && pageEl.classList.contains('hidden')) return;
+
+    const canvas = document.getElementById('reportPieCanvas');
+    const legend = document.getElementById('reportPieLegend');
+    const totalEl = document.getElementById('reportPieTotal');
+    if (!canvas || !legend || !totalEl) return;
+
+    const entries = [
+      { key: 'APTO', full: 'APTO', count: Number(apto || 0), color: '#34d399' },
+      { key: 'INAPTO', full: 'INAPTO', count: Number(inapto || 0), color: '#f87171' },
+      { key: 'INDEFINIDO', full: 'INDEFINIDO', count: Number(indef || 0), color: '#6b7280' }
+    ].filter(e => e.count > 0);
+
+    const total = entries.reduce((s, e) => s + e.count, 0);
+    reportChartsData = { pie: entries, total };
+    totalEl.textContent = String(total || 0);
+    legend.innerHTML = '';
+    if (!entries.length) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.textContent = 'Sem dados para os filtros.';
+      legend.appendChild(empty);
+      const sized = getCanvasCtx(canvas);
+      if (sized) sized.ctx.clearRect(0, 0, sized.w, sized.h);
+      return;
+    }
+    entries.forEach((e, idx) => {
+      const pct = total ? Math.round((e.count / total) * 100) : 0;
+      const row = document.createElement('div');
+      row.className = 'pie-legend__item';
+      row.setAttribute('data-idx', String(idx));
+      row.innerHTML = `<span class="pie-legend__dot" style="background:${e.color}"></span><span>${e.full}</span><span class="meta" style="margin-left:auto">${e.count} (${pct}%)</span>`;
+      legend.appendChild(row);
+    });
+
+    initReportChartsInteractions();
+    drawReportPie(canvas, entries, total, reportChartsHover.pie);
+  }
+
+  function renderHistorico() {
+    const totalEl = document.getElementById('histTotal');
+    const processedEl = document.getElementById('histProcessed');
+    const pendingEl = document.getElementById('histPending');
+    const errorsEl = document.getElementById('histErrors');
+    const bodyEl = document.getElementById('histBody');
+    if (!totalEl || !processedEl || !pendingEl || !errorsEl || !bodyEl) return;
+
+    const sum = historyRuns.reduce((acc, r) => {
+      acc.total += Number(r?.total || 0);
+      acc.ok += Number(r?.ok || 0);
+      acc.fail += Number(r?.fail || 0);
+      return acc;
+    }, { total: 0, ok: 0, fail: 0 });
+    const pending = Math.max(0, sum.total - sum.ok - sum.fail);
+    totalEl.innerText = String(sum.total);
+    processedEl.innerText = String(sum.ok);
+    pendingEl.innerText = String(pending);
+    errorsEl.innerText = String(sum.fail);
+
+    // Renderizar gráficos
+    renderHistoricoCharts();
 
     const filter = document.getElementById('histFilter')?.value || 'all';
     const term = (document.getElementById('histSearch')?.value || '').toLowerCase();
@@ -1061,7 +2681,8 @@
       { key: 'nomeExaminador', label: 'Nome Examinador' },
       { key: 'parecerAso', label: 'Parecer (ASO)' },
       { key: 'qtdeExames', label: 'Qtde Exames' },
-      { key: 'comparativo', label: 'Comparativo' }
+      { key: 'comparativo', label: 'Comparativo' },
+      { key: '__actions', label: 'Ações' }
     ],
     exames: [
       { key: 'nomeFuncionario', label: 'Nome Funcionário' },
@@ -1074,7 +2695,8 @@
       { key: 'nomeExaminador', label: 'Nome Examinador' },
       { key: 'situacao', label: 'Situação' },
       { key: 'matriculaApi', label: 'Matrícula (API)' },
-      { key: 'comparativo', label: 'Comparativo' }
+      { key: 'comparativo', label: 'Comparativo' },
+      { key: '__actions', label: 'Ações' }
     ]
   };
 
@@ -1304,47 +2926,1332 @@
     return 'INDEFINIDO';
   }
 
-  function renderAsoRelatorios() {
-    const emptyEl = document.getElementById('reportEmpty');
-    const contentEl = document.getElementById('reportContent');
-    const barsEl = document.getElementById('reportBars');
+  let reportFilterState = { source: 'all', parecer: 'all', pendingOnly: false, q: '' };
+  let reportLastFilteredEntries = [];
 
-    if (!emptyEl || !contentEl || !barsEl) return;
+  function setReportFilterState(next) {
+    reportFilterState = {
+      source: String(next?.source || 'all'),
+      parecer: String(next?.parecer || 'all'),
+      pendingOnly: Boolean(next?.pendingOnly),
+      q: String(next?.q || '')
+    };
+  }
 
-    const total = Array.isArray(coverRows) ? coverRows.length : 0;
-    if (!total) {
-      emptyEl.classList.remove('hidden');
-      contentEl.classList.add('hidden');
-      barsEl.classList.add('hidden');
+  function syncReportFiltersUiFromState() {
+    const src = document.getElementById('reportFilterSource');
+    const par = document.getElementById('reportFilterParecer');
+    const pen = document.getElementById('reportFilterPendingOnly');
+    const q = document.getElementById('reportFilterSearch');
+    if (src) src.value = reportFilterState.source;
+    if (par) par.value = reportFilterState.parecer;
+    if (pen) pen.checked = reportFilterState.pendingOnly;
+    if (q && q.value !== reportFilterState.q) q.value = reportFilterState.q;
+  }
+
+  function syncReportFiltersStateFromUi() {
+    const src = document.getElementById('reportFilterSource')?.value || 'all';
+    const par = document.getElementById('reportFilterParecer')?.value || 'all';
+    const pen = Boolean(document.getElementById('reportFilterPendingOnly')?.checked);
+    const q = String(document.getElementById('reportFilterSearch')?.value || '');
+    setReportFilterState({ source: src, parecer: par, pendingOnly: pen, q });
+  }
+
+  function onReportFiltersChange() {
+    syncReportFiltersStateFromUi();
+    renderAsoRelatorios();
+  }
+
+  function clearReportFilters() {
+    setReportFilterState({ source: 'all', parecer: 'all', pendingOnly: false, q: '' });
+    syncReportFiltersUiFromState();
+    renderAsoRelatorios();
+  }
+
+  function renderReportFilterChips() {
+    const el = document.getElementById('reportFilterChips');
+    if (!el) return;
+    el.innerHTML = '';
+
+    const chips = [];
+    if (reportFilterState.source !== 'all') {
+      chips.push({ key: 'source', label: `Tipo: ${reportFilterState.source === 'capa' ? 'Capa' : 'Exames'}` });
+    }
+    if (reportFilterState.parecer !== 'all') {
+      chips.push({ key: 'parecer', label: `Parecer: ${reportFilterState.parecer}` });
+    }
+    if (reportFilterState.pendingOnly) {
+      chips.push({ key: 'pendingOnly', label: 'Somente pendências' });
+    }
+    if (reportFilterState.q.trim()) {
+      chips.push({ key: 'q', label: `Busca: ${reportFilterState.q.trim()}` });
+    }
+
+    chips.forEach(c => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      const text = document.createElement('div');
+      text.textContent = c.label;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'chip__x';
+      x.textContent = '×';
+      x.onclick = () => {
+        if (c.key === 'source') reportFilterState.source = 'all';
+        if (c.key === 'parecer') reportFilterState.parecer = 'all';
+        if (c.key === 'pendingOnly') reportFilterState.pendingOnly = false;
+        if (c.key === 'q') reportFilterState.q = '';
+        syncReportFiltersUiFromState();
+        renderAsoRelatorios();
+      };
+      chip.appendChild(text);
+      chip.appendChild(x);
+      el.appendChild(chip);
+    });
+  }
+
+  function getReportIntegrationState(kind, row) {
+    const comp = normalizeHeaderKey(row?.comparativo);
+    const blocked = Boolean(row?.blocked);
+    if (kind === 'capa') {
+      if (comp.includes('capa integrada')) return 'ok';
+    } else if (kind === 'exames') {
+      if (comp.includes('exame integrado')) return 'ok';
+    }
+    if (comp.includes('erro integracao') || comp.includes('erro integração')) return 'fail';
+    if (blocked) return 'none';
+    return 'pend';
+  }
+
+  function reportRowSearchBlob(kind, row) {
+    const parts = [
+      kind,
+      cpfDigits(row?.cpf),
+      normalizeCell(row?.nomeFuncionario || ''),
+      normalizeCell(row?.matricula || ''),
+      normalizeCell(row?.chapa || ''),
+      normalizeCell(row?.nomeExame || ''),
+      normalizeCell(row?.tipoExame || ''),
+      normalizeCell(row?.nomeExaminador || ''),
+      normalizeCell(row?.parecerAso || ''),
+      normalizeCell(row?.comparativo || '')
+    ];
+    return parts.join(' ').toLowerCase();
+  }
+
+  function applyReportFiltersToRows() {
+    const src = reportFilterState.source;
+    const parecer = reportFilterState.parecer;
+    const pendingOnly = reportFilterState.pendingOnly;
+    const term = reportFilterState.q.trim().toLowerCase();
+
+    const covers = (Array.isArray(coverRows) ? coverRows : []).filter(r => {
+      if (src !== 'all' && src !== 'capa') return false;
+      const p = classifyParecerAso(r?.parecerAso);
+      if (parecer !== 'all' && p !== parecer) return false;
+      const st = getReportIntegrationState('capa', r);
+      if (pendingOnly && st !== 'pend') return false;
+      if (term && !reportRowSearchBlob('capa', r).includes(term)) return false;
+      return true;
+    });
+
+    const exams = (Array.isArray(detailRows) ? detailRows : []).filter(r => {
+      if (src !== 'all' && src !== 'exames') return false;
+      if (parecer !== 'all') return false;
+      const st = getReportIntegrationState('exames', r);
+      if (pendingOnly && st !== 'pend') return false;
+      if (term && !reportRowSearchBlob('exames', r).includes(term)) return false;
+      return true;
+    });
+
+    const entries = [
+      ...covers.map(r => ({ kind: 'capa', row: r })),
+      ...exams.map(r => ({ kind: 'exames', row: r }))
+    ];
+
+    return { covers, exams, entries };
+  }
+
+  function openReportPendenciasModal() {
+    const rows = (reportLastFilteredEntries || []).filter(e => getReportIntegrationState(e.kind, e.row) === 'pend');
+    if (!rows.length) {
+      showToast('Sem pendências para os filtros atuais', 'info');
       return;
     }
 
+    const modal = document.getElementById('recordModalOverlay');
+    const title = document.getElementById('recordModalTitle');
+    const sub = document.getElementById('recordModalSubtitle');
+    const body = document.getElementById('recordModalBody');
+    if (!modal || !title || !sub || !body) return;
+
+    title.textContent = 'Pendências';
+    sub.textContent = `${rows.length} registro(s)`;
+    body.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const table = document.createElement('table');
+    table.className = 'table table--compact';
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    ['Tipo', 'CPF', 'Funcionário', 'Exame', 'Comparativo'].forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    const tbody = document.createElement('tbody');
+    rows.slice(0, 200).forEach(e => {
+      const tr = document.createElement('tr');
+      const tipo = document.createElement('td');
+      tipo.textContent = e.kind === 'capa' ? 'Capa' : 'Exames';
+      const cpf = document.createElement('td');
+      cpf.textContent = String(e.row?.cpf || '');
+      const nome = document.createElement('td');
+      nome.textContent = String(e.row?.nomeFuncionario || '');
+      const exame = document.createElement('td');
+      exame.textContent = e.kind === 'exames' ? String(e.row?.nomeExame || '') : '-';
+      const comp = document.createElement('td');
+      comp.textContent = String(e.row?.comparativo || '');
+      tr.appendChild(tipo);
+      tr.appendChild(cpf);
+      tr.appendChild(nome);
+      tr.appendChild(exame);
+      tr.appendChild(comp);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    body.appendChild(wrap);
+
+    modal.classList.remove('hidden');
+    document.addEventListener('keydown', onRecordModalKeyDown, true);
+  }
+
+  function renderReportErrorsBar(top) {
+    const canvas = document.getElementById('reportErrorsBarCanvas');
+    const legend = document.getElementById('reportErrorsBarLegend');
+    if (!canvas || !legend) return;
+    const sized = getCanvasCtx(canvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+
+    legend.innerHTML = '';
+    const list = Array.isArray(top) ? top : [];
+    if (!list.length) return;
+
+    const items = list.slice(0, 8);
+    const max = Math.max(...items.map(i => Number(i.count || 0)), 1);
+    const padX = 14;
+    const padTop = 14;
+    const padBottom = 14;
+    const rowH = Math.max(22, Math.floor((h - padTop - padBottom) / items.length));
+    const barH = Math.max(10, Math.floor(rowH * 0.52));
+    const labelW = Math.min(220, Math.floor(w * 0.46));
+    const barX = padX + labelW + 10;
+    const barW = w - barX - padX;
+
+    ctx.save();
+    ctx.font = '11px Inter';
+    ctx.textBaseline = 'middle';
+    items.forEach((it, idx) => {
+      const y = padTop + idx * rowH + rowH / 2;
+      const tipo = String(it.tipo || '');
+      const msg = String(it.msg || '');
+      const label = msg.length > 34 ? `${msg.slice(0, 34)}…` : msg;
+      const pct = Math.max(0, Math.min(1, Number(it.count || 0) / max));
+      const bw = Math.max(8, Math.round(barW * pct));
+      const color = tipo.toLowerCase() === 'capa' ? '#b47cff' : tipo.toLowerCase() === 'exames' ? '#34d399' : '#6c8cff';
+
+      ctx.fillStyle = '#9aa4bf';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, padX, y);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRectPath(ctx, barX, y - barH / 2, barW, barH, 8);
+      ctx.fill();
+
+      const grad = ctx.createLinearGradient(barX, 0, barX + bw, 0);
+      grad.addColorStop(0, mixColor(color, '#ffffff', 0.16));
+      grad.addColorStop(1, mixColor(color, '#000000', 0.08));
+      ctx.fillStyle = grad;
+      roundRectPath(ctx, barX, y - barH / 2, bw, barH, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#e3e8ee';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(it.count || 0), barX + barW, y);
+
+      const li = document.createElement('div');
+      li.className = 'bar-legend__item';
+      li.tabIndex = 0;
+      li.onclick = () => openObjectModal('Erro', '', it);
+      li.onkeydown = (e) => { if (e.key === 'Enter') openObjectModal('Erro', '', it); };
+      li.innerHTML = `<div class="bar-legend__color" style="background:${color}"></div><div>${tipo || 'Erro'} • ${label}</div>`;
+      legend.appendChild(li);
+    });
+    ctx.restore();
+  }
+
+  function renderAsoRelatorios() {
+    const emptyEl = document.getElementById('reportEmpty');
+    const dashEl = document.getElementById('reportDashboard');
+    const topCardsEl = document.getElementById('reportTopCards');
+    const filtersEl = document.getElementById('reportFilters');
+    const totalCardEl = document.getElementById('reportTotal');
+    const processedCardEl = document.getElementById('reportProcessed');
+    const pendingCardEl = document.getElementById('reportPending');
+    const errorsCardEl = document.getElementById('reportErrors');
+    const dateEl = document.getElementById('reportTodayDate');
+    const todayListEl = document.getElementById('reportTodayList');
+    const topErrorsList = document.getElementById('reportTopErrorsList');
+    const topErrorsCanvas = document.getElementById('reportErrorsBarCanvas');
+    const topErrorsLegend = document.getElementById('reportErrorsBarLegend');
+    const kpiCpfs = document.getElementById('reportKpiCpfs');
+    const kpiCapas = document.getElementById('reportKpiCapas');
+    const kpiExames = document.getElementById('reportKpiExames');
+    const kpiPend = document.getElementById('reportKpiPendencias');
+    const capaOkEl = document.getElementById('reportCapaOk');
+    const capaFailEl = document.getElementById('reportCapaFail');
+    const capaPendEl = document.getElementById('reportCapaPend');
+    const capaMetaEl = document.getElementById('reportCapaMeta');
+    const exOkEl = document.getElementById('reportExOk');
+    const exFailEl = document.getElementById('reportExFail');
+    const exPendEl = document.getElementById('reportExPend');
+    const exMetaEl = document.getElementById('reportExMeta');
+
+    if (!emptyEl || !dashEl || !topCardsEl || !filtersEl || !totalCardEl || !processedCardEl || !pendingCardEl || !errorsCardEl || !dateEl || !todayListEl || !topErrorsList || !topErrorsCanvas || !topErrorsLegend || !kpiCpfs || !kpiCapas || !kpiExames || !kpiPend || !capaOkEl || !capaFailEl || !capaPendEl || !capaMetaEl || !exOkEl || !exFailEl || !exPendEl || !exMetaEl) return;
+
+    const totalCapas = Array.isArray(coverRows) ? coverRows.length : 0;
+    const totalExames = Array.isArray(detailRows) ? detailRows.length : 0;
+    const hasData = Boolean(totalCapas || totalExames);
+    if (!hasData) {
+      emptyEl.classList.remove('hidden');
+      dashEl.classList.add('hidden');
+      topCardsEl.classList.add('hidden');
+      filtersEl.classList.add('hidden');
+      return;
+    }
+
+    filtersEl.classList.remove('hidden');
+    syncReportFiltersUiFromState();
+    renderReportFilterChips();
+
+    const filteredData = applyReportFiltersToRows();
+    reportLastFilteredEntries = filteredData.entries;
+
+    const totalCapasF = filteredData.covers.length;
+    const totalExamesF = filteredData.exams.length;
+    const hasFiltered = Boolean(totalCapasF || totalExamesF);
+
+    const cpfsSet = new Set(filteredData.entries.map(e => cpfDigits(e.row?.cpf)).filter(c => c.length === 11));
+    const cpfsUniq = cpfsSet.size;
+
     let apto = 0;
     let inapto = 0;
+    let indef = 0;
+    let capaOk = 0;
+    let capaFail = 0;
+    let capaPend = 0;
 
-    coverRows.forEach(r => {
-      const status = classifyParecerAso(r.parecerAso);
+    filteredData.covers.forEach(r => {
+      const status = classifyParecerAso(r?.parecerAso);
       if (status === 'APTO') apto += 1;
-      if (status === 'INAPTO') inapto += 1;
+      else if (status === 'INAPTO') inapto += 1;
+      else indef += 1;
+
+      const st = getReportIntegrationState('capa', r);
+      if (st === 'ok') capaOk += 1;
+      else if (st === 'fail') capaFail += 1;
+      else if (st === 'pend') capaPend += 1;
     });
 
-    const totalForPct = Math.max(1, total);
-    const aptoPct = Math.round((apto / totalForPct) * 100);
-    const inaptoPct = Math.round((inapto / totalForPct) * 100);
+    let exOk = 0;
+    let exFail = 0;
+    let exPend = 0;
+    filteredData.exams.forEach(r => {
+      const st = getReportIntegrationState('exames', r);
+      if (st === 'ok') exOk += 1;
+      else if (st === 'fail') exFail += 1;
+      else if (st === 'pend') exPend += 1;
+    });
 
-    document.getElementById('reportTotal').innerText = String(total);
-    document.getElementById('reportApto').innerText = String(apto);
-    document.getElementById('reportInapto').innerText = String(inapto);
+    const pendencias = capaPend + exPend;
+    kpiCpfs.innerText = String(cpfsUniq);
+    kpiCapas.innerText = String(totalCapasF);
+    kpiExames.innerText = String(totalExamesF);
+    kpiPend.innerText = String(pendencias);
 
-    document.getElementById('reportAptoPct').innerText = `${aptoPct}%`;
-    document.getElementById('reportInaptoPct').innerText = `${inaptoPct}%`;
+    const total = totalCapasF + totalExamesF;
+    const processed = capaOk + exOk;
+    const errors = capaFail + exFail;
+    const pending = pendencias;
+    totalCardEl.innerText = String(total);
+    processedCardEl.innerText = String(processed);
+    pendingCardEl.innerText = String(pending);
+    errorsCardEl.innerText = String(errors);
+    topCardsEl.classList.remove('hidden');
 
-    document.getElementById('reportAptoFill').style.width = `${aptoPct}%`;
-    document.getElementById('reportInaptoFill').style.width = `${inaptoPct}%`;
+    const setStack = (okEl, failEl, pendEl, metaEl, okN, failN, pendN) => {
+      const total = Math.max(1, okN + failN + pendN);
+      const okPct = Math.round((okN / total) * 100);
+      const failPct = Math.round((failN / total) * 100);
+      const pendPct = Math.max(0, 100 - okPct - failPct);
+      okEl.style.width = `${okPct}%`;
+      failEl.style.width = `${failPct}%`;
+      pendEl.style.width = `${pendPct}%`;
+      metaEl.innerHTML =
+        `<span class="report-int__pill report-int__pill--ok">${okN} ok</span>` +
+        `<span class="report-int__pill report-int__pill--fail">${failN} falhas</span>` +
+        `<span class="report-int__pill report-int__pill--pend">${pendN} pendente</span>`;
+    };
+
+    setStack(capaOkEl, capaFailEl, capaPendEl, capaMetaEl, capaOk, capaFail, capaPend);
+    setStack(exOkEl, exFailEl, exPendEl, exMetaEl, exOk, exFail, exPend);
+
+    dateEl.innerText = formatNowPtBr();
+
+    todayListEl.innerHTML = '';
+    const items = [
+      { label: 'Capas', value: totalCapasF, variant: '' },
+      { label: 'Exames', value: totalExamesF, variant: '' },
+      { label: 'Apto', value: apto, variant: 'ok' },
+      { label: 'Inapto', value: inapto, variant: 'fail' },
+      { label: 'Indefinido', value: indef, variant: 'pend' },
+      { label: 'Capa integrada', value: capaOk, variant: 'ok' },
+      { label: 'Exame integrado', value: exOk, variant: 'ok' },
+      { label: 'Falhas integração', value: capaFail + exFail, variant: 'fail' },
+      { label: 'Pendências', value: pendencias, variant: 'pend' }
+    ];
+    if (!hasFiltered) {
+      const row = document.createElement('div');
+      row.className = 'muted';
+      row.textContent = 'Nenhum registro encontrado para os filtros.';
+      todayListEl.appendChild(row);
+    }
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'report-item';
+      const left = document.createElement('div');
+      left.className = 'report-item__label';
+      left.textContent = it.label;
+      const right = document.createElement('div');
+      right.className = `report-item__value${it.variant ? ` report-item__value--${it.variant}` : ''}`;
+      right.textContent = String(it.value);
+      row.appendChild(left);
+      row.appendChild(right);
+      todayListEl.appendChild(row);
+    });
+
+    renderReportParecerChart(apto, inapto, indef);
+
+    topErrorsList.innerHTML = '';
+    const errSource = Array.isArray(monitorErrors) ? monitorErrors : [];
+    const errFiltered = errSource.filter(e => {
+      const tipo = String(e?.tipo || '').toLowerCase();
+      if (reportFilterState.source === 'capa' && tipo !== 'capa') return false;
+      if (reportFilterState.source === 'exames' && tipo !== 'exames') return false;
+      const term = reportFilterState.q.trim().toLowerCase();
+      if (!term) return true;
+      const blob = `${e?.tipo || ''} ${e?.chave || ''} ${e?.mensagem || ''}`.toLowerCase();
+      return blob.includes(term);
+    });
+    const grouped = new Map();
+    errFiltered.slice(0, 500).forEach(e => {
+      const tipo = String(e?.tipo || '');
+      const msg = String(e?.mensagem || '');
+      if (!tipo || !msg) return;
+      const key = `${tipo}||${msg}`;
+      grouped.set(key, (grouped.get(key) || 0) + 1);
+    });
+    const top = Array.from(grouped.entries())
+      .map(([k, count]) => {
+        const [tipo, msg] = k.split('||');
+        return { tipo, msg, count };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    renderReportErrorsBar(top);
+
+    if (!top.length) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.textContent = 'Sem erros registrados';
+      topErrorsList.appendChild(empty);
+    } else {
+      const max = Math.max(...top.map(r => Number(r.count || 0)), 1);
+      top.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'report-error';
+        row.tabIndex = 0;
+        row.onclick = () => openObjectModal('Erro', '', r);
+        row.onkeydown = (e) => { if (e.key === 'Enter') openObjectModal('Erro', '', r); };
+
+        const head = document.createElement('div');
+        head.className = 'report-error__head';
+
+        const badge = document.createElement('div');
+        badge.className = `report-error__badge report-error__badge--${String(r.tipo || '').toLowerCase() || 'all'}`;
+        badge.textContent = String(r.tipo || 'Erro');
+
+        const count = document.createElement('div');
+        count.className = 'report-error__count';
+        count.textContent = String(r.count);
+
+        head.appendChild(badge);
+        head.appendChild(count);
+
+        const msg = document.createElement('div');
+        msg.className = 'report-error__msg';
+        msg.textContent = String(r.msg || '');
+
+        const barWrap = document.createElement('div');
+        barWrap.className = 'report-error__bar';
+        const bar = document.createElement('div');
+        bar.className = 'report-error__barFill';
+        bar.style.width = `${Math.max(4, Math.round((Number(r.count || 0) / max) * 100))}%`;
+        barWrap.appendChild(bar);
+
+        row.appendChild(head);
+        row.appendChild(msg);
+        row.appendChild(barWrap);
+        topErrorsList.appendChild(row);
+      });
+    }
 
     emptyEl.classList.add('hidden');
-    contentEl.classList.remove('hidden');
-    barsEl.classList.remove('hidden');
+    dashEl.classList.remove('hidden');
+  }
+
+  function buildEsocialUrl() {
+    const base = String(apiBaseUrl || defaultApiBaseUrl || '').trim();
+    if (!base) return '';
+    const api11 = base.replace(/API\.0006/gi, 'API.0011');
+    const withoutQuery = api11.split('?')[0];
+    if (/API\.0011/i.test(withoutQuery)) return withoutQuery;
+    try {
+      const u = new URL(base);
+      return `${u.origin}/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0011/0/V/`;
+    } catch {
+      return '';
+    }
+  }
+
+  function buildEsocialUrlWithEmptyParameters() {
+    const url = buildEsocialUrl();
+    if (!url) return '';
+    if (url.includes('?')) return url;
+    return `${url}?parameters=`;
+  }
+
+  function normalizeLoginValue(value) {
+    const s = normalizeCell(value).toLowerCase().trim();
+    if (!s) return '';
+    const parts = s.split('\\');
+    const last = parts[parts.length - 1] || s;
+    const beforeAt = last.split('@')[0] || last;
+    return beforeAt.trim();
+  }
+
+  function findEsocialUserKey(rows) {
+    const sample = rows && rows.length ? rows[0] : null;
+    if (!sample || typeof sample !== 'object') return '';
+    const keys = Object.keys(sample);
+    const candidates = [
+      /^usuario$/i,
+      /^user$/i,
+      /^login$/i,
+      /usuario.*(inclusao|inclusão|criacao|criação)/i,
+      /(criado|criador).*por/i,
+      /(created|owner|responsavel|responsável)/i,
+      /(operador|autor)/i
+    ];
+    for (const rx of candidates) {
+      const k = keys.find(key => rx.test(key));
+      if (k) return k;
+    }
+    const fallback = keys.find(key => /(usu[aá]rio|user|login)/i.test(key));
+    return fallback || '';
+  }
+
+  function filterEsocialRowsForLoggedUser(rows) {
+    const user = String(apiUser || sessionStorage.getItem('apiUser') || '').trim();
+    if (!user) return { rows, filtered: false, total: Array.isArray(rows) ? rows.length : 0 };
+    const normUser = normalizeLoginValue(user);
+    const list = Array.isArray(rows) ? rows : [];
+    const userKey = findEsocialUserKey(list);
+    if (!userKey) return { rows: list, filtered: false, total: list.length };
+    const out = list.filter(r => normalizeLoginValue(r?.[userKey]) === normUser);
+    return { rows: out, filtered: true, total: list.length, userKey };
+  }
+
+  function findStatusKey(rows) {
+    const sample = rows && rows.length ? rows[0] : null;
+    if (!sample || typeof sample !== 'object') return '';
+    const keys = Object.keys(sample);
+    const candidates = [
+      /status.*esocial/i,
+      /^status$/i,
+      /situacao/i,
+      /resultado/i,
+      /retorno/i
+    ];
+    for (const rx of candidates) {
+      const k = keys.find(key => rx.test(key));
+      if (k) return k;
+    }
+    return '';
+  }
+
+  function getEsocialStatusMeta(code) {
+    const s = normalizeCell(code);
+    if (s === '0') return { code: '0', label: 'Aguardando processamento/Aguardando XML' };
+    if (s === '1' || s === '2') return { code: s, label: 'Gerado/XML Gerado' };
+    if (s === '3' || s === '4') return { code: s, label: 'Enviado para o Governo/Aceito no Governo' };
+    if (s === '5') return { code: '5', label: 'Rejeitado pelo Governo' };
+    if (s === '9') return { code: '9', label: 'Gerado com Erro' };
+    if (s === '10') return { code: '10', label: 'Integrado ao TAF' };
+    if (s === '11' || s === '12' || s === '13' || s === '14') return { code: s, label: 'Intermediário (TAF/TSS)' };
+    return s ? { code: s, label: 'Desconhecido' } : { code: '', label: '' };
+  }
+
+  function getEsocialFilteredRows() {
+    let rows = Array.isArray(esocialRows) ? esocialRows : [];
+    if (esocialSearch) {
+      const term = esocialSearch.toLowerCase();
+      rows = rows.filter(r => JSON.stringify(r || {}).toLowerCase().includes(term));
+    }
+    const statusKey = findStatusKey(rows);
+    if (esocialStatusValue !== 'all' && statusKey) {
+      rows = rows.filter(r => normalizeCell(r?.[statusKey]) === esocialStatusValue);
+    }
+    return rows;
+  }
+
+  function getEsocialStatusColor(code) {
+    const s = normalizeCell(code);
+    if (s === '4' || s === '10') return '#0f766e';
+    if (s === '5' || s === '9') return '#b91c1c';
+    if (s === '0') return '#6b7280';
+    if (s === '1' || s === '2') return '#6c8cff';
+    if (s === '3') return '#3b82f6';
+    if (s === '11' || s === '12' || s === '13' || s === '14') return '#b47cff';
+    return '#9aa4bf';
+  }
+
+  function getCanvasCtx(canvas) {
+    const c = canvas;
+    const rect = c.getBoundingClientRect();
+    const cssW = Math.round(rect.width || 0);
+    const cssH = Math.round(rect.height || 0);
+    if (cssW < 2 || cssH < 2) return null;
+    const dpr = window.devicePixelRatio || 1;
+    c.width = Math.round(cssW * dpr);
+    c.height = Math.round(cssH * dpr);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: cssW, h: cssH };
+  }
+
+  let esocialChartsInit = false;
+  let esocialChartsHover = { pie: -1, bar: -1 };
+  let esocialChartsGeom = { pie: [], bar: [] };
+  let esocialChartsData = { entries: [], total: 0, top5: [] };
+
+  function ensureChartTooltip() {
+    let el = document.getElementById('chartTooltip');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'chartTooltip';
+    el.className = 'chart-tooltip hidden';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showChartTooltip(text, x, y) {
+    const el = ensureChartTooltip();
+    el.textContent = String(text || '');
+    el.classList.remove('hidden');
+    const pad = 14;
+    const vw = window.innerWidth || 0;
+    const vh = window.innerHeight || 0;
+    const rect = el.getBoundingClientRect();
+    const left = Math.max(8, Math.min(vw - rect.width - 8, x + pad));
+    const top = Math.max(8, Math.min(vh - rect.height - 8, y + pad));
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  }
+
+  function hideChartTooltip() {
+    const el = document.getElementById('chartTooltip');
+    if (!el) return;
+    el.classList.add('hidden');
+  }
+
+  function hexToRgb(hex) {
+    const h = String(hex || '').replace('#', '').trim();
+    if (h.length === 3) {
+      const r = parseInt(h[0] + h[0], 16);
+      const g = parseInt(h[1] + h[1], 16);
+      const b = parseInt(h[2] + h[2], 16);
+      return { r, g, b };
+    }
+    if (h.length === 6) {
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      return { r, g, b };
+    }
+    return null;
+  }
+
+  function mixColor(hex, mixHex, t) {
+    const a = hexToRgb(hex);
+    const b = hexToRgb(mixHex);
+    if (!a || !b) return String(hex || '');
+    const k = Math.max(0, Math.min(1, Number(t || 0)));
+    const r = Math.round(a.r + (b.r - a.r) * k);
+    const g = Math.round(a.g + (b.g - a.g) * k);
+    const bl = Math.round(a.b + (b.b - a.b) * k);
+    return `rgb(${r}, ${g}, ${bl})`;
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+    ctx.closePath();
+  }
+
+  function drawEsocialPie(pieCanvas, entries, total, hoveredIdx) {
+    if (!pieCanvas) return;
+    const sized = getCanvasCtx(pieCanvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const rOuter = Math.min(cx, cy) - 8;
+    const rInner = rOuter * 0.6;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+    ctx.arc(cx, cy, rInner, 0, Math.PI * 2, true);
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fill();
+    ctx.restore();
+
+    const geom = [];
+    let start = -Math.PI / 2;
+    const baseStartNorm = 0;
+    entries.forEach((e, idx) => {
+      const angle = (e.count / Math.max(1, total)) * Math.PI * 2;
+      const end = start + angle;
+      const color = getEsocialStatusColor(e.code);
+      const isHover = idx === hoveredIdx;
+      const pop = isHover ? 6 : 0;
+      const ro = rOuter + pop;
+      const ri = rInner;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(cx, cy - ro, cx, cy + ro);
+      grad.addColorStop(0, mixColor(color, '#ffffff', 0.18));
+      grad.addColorStop(1, mixColor(color, '#000000', 0.08));
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = hoveredIdx === -1 || isHover ? 1 : 0.45;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, ro, start, end);
+      ctx.arc(cx, cy, ri, end, start, true);
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      const startNorm = ((start - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const endNorm = ((end - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      geom.push({ idx, start: startNorm, end: endNorm, code: e.code });
+
+      start = end;
+    });
+
+    esocialChartsGeom.pie = geom;
+  }
+
+  function drawEsocialBar(barCanvas, top5, hoveredIdx) {
+    if (!barCanvas) return;
+    const sized = getCanvasCtx(barCanvas);
+    if (!sized) return;
+    const { ctx, w, h } = sized;
+    ctx.clearRect(0, 0, w, h);
+    const padX = 22;
+    const padTop = 18;
+    const padBottom = 48;
+    const chartW = w - padX * 2;
+    const chartH = h - padTop - padBottom;
+    const max = Math.max(...top5.map(e => e.count), 1);
+    const step = chartW / Math.max(1, top5.length);
+    const bw = step * 0.66;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75, 1].forEach(p => {
+      const y = padTop + chartH * p;
+      ctx.beginPath();
+      ctx.moveTo(padX, y);
+      ctx.lineTo(padX + chartW, y);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    const bars = [];
+    top5.forEach((e, i) => {
+      const x = padX + i * step + (step - bw) / 2;
+      const bh = (e.count / max) * chartH;
+      const y = padTop + (chartH - bh);
+      const isHover = i === hoveredIdx;
+      const color = getEsocialStatusColor(e.code);
+
+      ctx.save();
+      ctx.globalAlpha = hoveredIdx === -1 || isHover ? 1 : 0.45;
+      const grad = ctx.createLinearGradient(0, y, 0, y + bh);
+      grad.addColorStop(0, mixColor(color, '#ffffff', 0.20));
+      grad.addColorStop(1, mixColor(color, '#000000', 0.10));
+      ctx.fillStyle = grad;
+      roundRectPath(ctx, x, y, bw, bh, 8);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      roundRectPath(ctx, x, y, bw, bh, 8);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#e3e8ee';
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(e.count), x + bw / 2, y - 6);
+      ctx.fillStyle = '#9aa4bf';
+      ctx.font = '11px Inter';
+      const label = e.full.length > 16 ? `${e.full.slice(0, 16)}…` : e.full;
+      ctx.fillText(label, x + bw / 2, padTop + chartH + 28);
+      ctx.restore();
+
+      bars.push({ idx: i, x, y, w: bw, h: bh, entry: e });
+    });
+    esocialChartsGeom.bar = bars;
+  }
+
+  function initEsocialChartsInteractions() {
+    if (esocialChartsInit) return;
+    esocialChartsInit = true;
+
+    const pie = document.getElementById('esocialPieCanvas');
+    const bar = document.getElementById('esocialBarCanvas');
+    const legend = document.getElementById('esocialPieLegend');
+    const barLegend = document.getElementById('esocialBarLegend');
+
+    const onPieMove = (ev) => {
+      if (!pie || !esocialChartsData.entries.length) return;
+      const rect = pie.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const rOuter = Math.min(cx, cy) - 8;
+      const rInner = rOuter * 0.6;
+      if (r < rInner || r > rOuter + 10) {
+        if (esocialChartsHover.pie !== -1) {
+          esocialChartsHover.pie = -1;
+          drawEsocialPie(pie, esocialChartsData.entries, esocialChartsData.total, -1);
+        }
+        hideChartTooltip();
+        return;
+      }
+      let ang = Math.atan2(dy, dx);
+      ang = ((ang - (-Math.PI / 2)) + Math.PI * 2) % (Math.PI * 2);
+      const hit = esocialChartsGeom.pie.find(s => {
+        if (s.start <= s.end) return ang >= s.start && ang <= s.end;
+        return ang >= s.start || ang <= s.end;
+      });
+      const idx = hit ? hit.idx : -1;
+      if (idx !== esocialChartsHover.pie) {
+        esocialChartsHover.pie = idx;
+        drawEsocialPie(pie, esocialChartsData.entries, esocialChartsData.total, idx);
+      }
+      if (idx >= 0) {
+        const e = esocialChartsData.entries[idx];
+        const pct = esocialChartsData.total ? Math.round((e.count / esocialChartsData.total) * 100) : 0;
+        showChartTooltip(`${e.full} • ${e.count} (${pct}%)`, ev.clientX, ev.clientY);
+      } else {
+        hideChartTooltip();
+      }
+    };
+
+    const onPieLeave = () => {
+      if (!pie) return;
+      if (esocialChartsHover.pie !== -1) {
+        esocialChartsHover.pie = -1;
+        drawEsocialPie(pie, esocialChartsData.entries, esocialChartsData.total, -1);
+      }
+      hideChartTooltip();
+    };
+
+    if (pie) {
+      pie.addEventListener('mousemove', onPieMove);
+      pie.addEventListener('mouseleave', onPieLeave);
+    }
+
+    const onBarMove = (ev) => {
+      if (!bar || !esocialChartsData.top5.length) return;
+      const rect = bar.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      const hit = esocialChartsGeom.bar.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      const idx = hit ? hit.idx : -1;
+      if (idx !== esocialChartsHover.bar) {
+        esocialChartsHover.bar = idx;
+        drawEsocialBar(bar, esocialChartsData.top5, idx);
+      }
+      if (hit) {
+        const e = hit.entry;
+        showChartTooltip(`${e.full} • ${e.count}`, ev.clientX, ev.clientY);
+      } else {
+        hideChartTooltip();
+      }
+    };
+
+    const onBarLeave = () => {
+      if (!bar) return;
+      if (esocialChartsHover.bar !== -1) {
+        esocialChartsHover.bar = -1;
+        drawEsocialBar(bar, esocialChartsData.top5, -1);
+      }
+      hideChartTooltip();
+    };
+
+    if (bar) {
+      bar.addEventListener('mousemove', onBarMove);
+      bar.addEventListener('mouseleave', onBarLeave);
+    }
+
+    const wireLegend = () => {
+      if (legend) {
+        Array.from(legend.querySelectorAll('.pie-legend__item')).forEach((row) => {
+          const idx = Number(row.getAttribute('data-idx') || '-1');
+          if (Number.isNaN(idx) || idx < 0) return;
+          row.onmouseenter = () => {
+            if (!pie) return;
+            esocialChartsHover.pie = idx;
+            drawEsocialPie(pie, esocialChartsData.entries, esocialChartsData.total, idx);
+          };
+          row.onmouseleave = () => {
+            if (!pie) return;
+            esocialChartsHover.pie = -1;
+            drawEsocialPie(pie, esocialChartsData.entries, esocialChartsData.total, -1);
+          };
+          row.onclick = () => {
+            const e = esocialChartsData.entries[idx];
+            if (!e) return;
+            esocialStatusValue = e.code || 'all';
+            const sel = document.getElementById('esocialStatusFilter');
+            if (sel) sel.value = esocialStatusValue;
+            esocialPage = 1;
+            renderEsocialQueue();
+          };
+        });
+      }
+      if (barLegend) {
+        Array.from(barLegend.querySelectorAll('.bar-legend__item')).forEach((row) => {
+          const idx = Number(row.getAttribute('data-idx') || '-1');
+          if (Number.isNaN(idx) || idx < 0) return;
+          row.onmouseenter = () => {
+            if (!bar) return;
+            esocialChartsHover.bar = idx;
+            drawEsocialBar(bar, esocialChartsData.top5, idx);
+          };
+          row.onmouseleave = () => {
+            if (!bar) return;
+            esocialChartsHover.bar = -1;
+            drawEsocialBar(bar, esocialChartsData.top5, -1);
+          };
+        });
+      }
+    };
+
+    const ro = 'ResizeObserver' in window ? new ResizeObserver(() => {
+      const pie2 = document.getElementById('esocialPieCanvas');
+      const bar2 = document.getElementById('esocialBarCanvas');
+      if (pie2) drawEsocialPie(pie2, esocialChartsData.entries, esocialChartsData.total, esocialChartsHover.pie);
+      if (bar2) drawEsocialBar(bar2, esocialChartsData.top5, esocialChartsHover.bar);
+      wireLegend();
+    }) : null;
+
+    if (ro) {
+      if (pie) ro.observe(pie);
+      if (bar) ro.observe(bar);
+    }
+
+    window.setTimeout(wireLegend, 0);
+  }
+
+  function renderEsocialCharts(statusCounts) {
+    const pageEl = document.getElementById('asoEsocialPage');
+    if (pageEl && pageEl.classList.contains('hidden')) return;
+
+    const pie = document.getElementById('esocialPieCanvas');
+    const bar = document.getElementById('esocialBarCanvas');
+    const pieLegend = document.getElementById('esocialPieLegend');
+    const barLegend = document.getElementById('esocialBarLegend');
+    const pieTotal = document.getElementById('esocialPieTotal');
+    const processedEl = document.getElementById('esocialProcessed');
+    const pendingEl = document.getElementById('esocialPending');
+    const errorsEl = document.getElementById('esocialErrors');
+    const rateEl = document.getElementById('esocialSuccessRate');
+    const lastUpdateEl = document.getElementById('esocialLastUpdate');
+
+    const entries = Array.from((statusCounts instanceof Map ? statusCounts : new Map()).entries()).map(([full, count]) => {
+      const raw = String(full || '').trim();
+      const parts = raw.split(' - ');
+      const code = String(parts[0] || '').trim();
+      const label = String(parts.slice(1).join(' - ') || raw).trim();
+      return { full: raw, code, label, count: Number(count || 0) };
+    }).filter(e => e.count > 0);
+
+    const total = entries.reduce((s, e) => s + e.count, 0);
+    if (pieTotal) pieTotal.textContent = total ? String(total) : '0';
+
+    const codesProcessed = new Set(['4', '10']);
+    const codesError = new Set(['5', '9']);
+    const codesPending = new Set(['0', '1', '2', '3', '11', '12', '13', '14']);
+
+    let processed = 0;
+    let pending = 0;
+    let errors = 0;
+    entries.forEach(e => {
+      const c = normalizeCell(e.code);
+      if (codesProcessed.has(c)) processed += e.count;
+      else if (codesError.has(c)) errors += e.count;
+      else if (codesPending.has(c)) pending += e.count;
+      else pending += e.count;
+    });
+
+    if (processedEl) processedEl.textContent = String(processed);
+    if (pendingEl) pendingEl.textContent = String(pending);
+    if (errorsEl) errorsEl.textContent = String(errors);
+    const pctVal = total ? Math.round((processed / total) * 100) : 0;
+    if (rateEl) rateEl.textContent = `${pctVal}%`;
+    if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const gaugeEl = document.getElementById('esocialSuccessGauge');
+    if (gaugeEl) gaugeEl.style.setProperty('--pct', String(Math.max(0, Math.min(100, pctVal))));
+
+    if (!entries.length) {
+      if (pieLegend) pieLegend.innerHTML = '';
+      if (barLegend) barLegend.innerHTML = '';
+      if (pie) {
+        const sized = getCanvasCtx(pie);
+        if (sized) sized.ctx.clearRect(0, 0, sized.w, sized.h);
+      }
+      if (bar) {
+        const sized = getCanvasCtx(bar);
+        if (sized) sized.ctx.clearRect(0, 0, sized.w, sized.h);
+      }
+      return;
+    }
+
+    const sorted = entries.slice().sort((a, b) => b.count - a.count);
+    const top5 = sorted.slice(0, 5);
+    esocialChartsData = { entries: sorted, total, top5 };
+    initEsocialChartsInteractions();
+    drawEsocialPie(pie, sorted, total, esocialChartsHover.pie);
+
+    if (pieLegend) {
+      pieLegend.innerHTML = '';
+      sorted.forEach((e, idx) => {
+        const pct = total ? Math.round((e.count / total) * 100) : 0;
+        const row = document.createElement('div');
+        row.className = 'pie-legend__item';
+        row.setAttribute('data-idx', String(idx));
+        row.innerHTML = `<span class="pie-legend__dot" style="background:${getEsocialStatusColor(e.code)}"></span><span>${e.full}</span><span class="meta" style="margin-left:auto">${e.count} (${pct}%)</span>`;
+        pieLegend.appendChild(row);
+      });
+    }
+
+    drawEsocialBar(bar, top5, esocialChartsHover.bar);
+
+    if (barLegend) {
+      barLegend.innerHTML = '';
+      top5.forEach((e, idx) => {
+        const item = document.createElement('div');
+        item.className = 'bar-legend__item';
+        item.setAttribute('data-idx', String(idx));
+        item.innerHTML = `<div class="bar-legend__color" style="background:${getEsocialStatusColor(e.code)}"></div><div>${e.full}</div>`;
+        barLegend.appendChild(item);
+      });
+    }
+  }
+
+  function renderEsocialPagination(totalItems) {
+    const el = document.getElementById('esocialPagination');
+    if (!el) return;
+    const total = Number(totalItems || 0);
+    const totalPages = Math.max(1, Math.ceil(total / esocialPageSize));
+    if (totalPages <= 1) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      return;
+    }
+    el.classList.remove('hidden');
+    el.innerHTML = '';
+
+    const current = Math.min(totalPages, Math.max(1, esocialPage));
+    esocialPage = current;
+
+    const makeBtn = (label, page, disabled, active) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pagination__btn';
+      if (active) b.classList.add('active');
+      b.disabled = Boolean(disabled);
+      b.textContent = label;
+      b.onclick = () => { esocialPage = page; renderEsocialQueue(); };
+      return b;
+    };
+
+    el.appendChild(makeBtn('<', current - 1, current <= 1, false));
+    el.appendChild(makeBtn('1', 1, false, current === 1));
+
+    let start = Math.max(2, current - 2);
+    let end = Math.min(totalPages - 1, current + 2);
+    if (start > 2) {
+      const dots = document.createElement('span');
+      dots.className = 'pagination__dots';
+      dots.textContent = '...';
+      el.appendChild(dots);
+    }
+    for (let p = start; p <= end; p++) el.appendChild(makeBtn(String(p), p, false, p === current));
+    if (end < totalPages - 1) {
+      const dots = document.createElement('span');
+      dots.className = 'pagination__dots';
+      dots.textContent = '...';
+      el.appendChild(dots);
+    }
+    if (totalPages > 1) el.appendChild(makeBtn(String(totalPages), totalPages, false, current === totalPages));
+    el.appendChild(makeBtn('>', current + 1, current >= totalPages, false));
+  }
+
+  function renderEsocialQueue() {
+    const head = document.getElementById('esocialTableHead');
+    const body = document.getElementById('esocialTableBody');
+    const count = document.getElementById('esocialCount');
+    const stats = document.getElementById('esocialStats');
+    const totalEl = document.getElementById('esocialTotal');
+    const distinctEl = document.getElementById('esocialDistinct');
+    const topEl = document.getElementById('esocialTop');
+    const statusSelect = document.getElementById('esocialStatusFilter');
+    if (!head || !body || !count || !stats || !totalEl || !distinctEl || !topEl || !statusSelect) return;
+
+    const rows = getEsocialFilteredRows();
+    const total = rows.length;
+    count.innerText = `${total} registro(s)`;
+
+    const statusKey = findStatusKey(Array.isArray(esocialRows) ? esocialRows : []);
+    const statusCounts = new Map();
+    if (statusKey) {
+      (Array.isArray(esocialRows) ? esocialRows : []).forEach(r => {
+        const meta = getEsocialStatusMeta(r?.[statusKey]);
+        const label = meta.code ? `${meta.code} - ${meta.label}` : '';
+        if (!label) return;
+        statusCounts.set(label, (statusCounts.get(label) || 0) + 1);
+      });
+    }
+
+    const currentOptions = new Set(Array.from(statusSelect.options).map(o => o.value));
+    if (statusKey) {
+      const values = Array.from(statusCounts.keys()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const codes = values.map(v => v.split(' - ')[0]).filter(Boolean);
+      if (codes.length && (codes.some(v => !currentOptions.has(v)) || currentOptions.size === 1)) {
+        statusSelect.innerHTML = '';
+        const optAll = document.createElement('option');
+        optAll.value = 'all';
+        optAll.textContent = 'Todos';
+        statusSelect.appendChild(optAll);
+        values.forEach(v => {
+          const code = v.split(' - ')[0];
+          const opt = document.createElement('option');
+          opt.value = code;
+          opt.textContent = v;
+          statusSelect.appendChild(opt);
+        });
+        statusSelect.value = esocialStatusValue;
+      }
+    }
+
+    totalEl.innerText = String((Array.isArray(esocialRows) ? esocialRows : []).length);
+    distinctEl.innerText = String(statusCounts.size);
+    const top = Array.from(statusCounts.entries()).sort((a, b) => b[1] - a[1])[0] || null;
+    topEl.innerText = top ? `${top[0]} (${top[1]})` : '-';
+    stats.classList.toggle('hidden', (Array.isArray(esocialRows) ? esocialRows.length : 0) === 0);
+    
+    // Renderizar gráficos do eSocial
+    renderEsocialCharts(statusCounts);
+
+    const pageTotalPages = Math.max(1, Math.ceil(total / esocialPageSize));
+    esocialPage = Math.min(pageTotalPages, Math.max(1, esocialPage));
+    const start = (esocialPage - 1) * esocialPageSize;
+    const visible = rows.slice(start, start + esocialPageSize);
+
+    const sample = visible[0] || (rows[0] || null);
+    const keys = sample && typeof sample === 'object' ? Object.keys(sample) : [];
+    const keyCompact = (k) => normalizeHeaderKey(k).replace(/\s+/g, '');
+    const scoreKey = (k) => {
+      const key = normalizeHeaderKey(k);
+      if (key.includes('status')) return 0;
+      if (key.includes('evento')) return 1;
+      if (key.includes('cpf')) return 2;
+      if (key.includes('chapa')) return 3;
+      if (key.includes('codpessoa')) return 4;
+      if (key.includes('data')) return 5;
+      if (key.includes('hora')) return 6;
+      return 50;
+    };
+    const sortedKeys = keys.slice().sort((a, b) => scoreKey(a) - scoreKey(b));
+    const displayKeys = [];
+    if (statusKey && keys.includes(statusKey)) displayKeys.push(statusKey);
+    const chapaKey = keys.find(k => keyCompact(k) === 'chapa') || keys.find(k => keyCompact(k).includes('chapa')) || '';
+    const tipoEventoKey = keys.find(k => keyCompact(k) === 'tipoevento') || keys.find(k => keyCompact(k).includes('tipoevento')) || '';
+    const idConsultaKey = keys.find(k => keyCompact(k) === 'idconsulta') || keys.find(k => keyCompact(k).includes('idconsulta')) || '';
+    const dataEventoKey = keys.find(k => keyCompact(k) === 'dataevento') || keys.find(k => keyCompact(k).includes('dataevento')) || '';
+    [chapaKey, tipoEventoKey, idConsultaKey, dataEventoKey].filter(Boolean).forEach(k => {
+      if (displayKeys.length >= 10) return;
+      if (!displayKeys.includes(k)) displayKeys.push(k);
+    });
+    sortedKeys.forEach(k => {
+      if (displayKeys.length >= 10) return;
+      if (k === statusKey) return;
+      if (k === chapaKey || k === tipoEventoKey || k === idConsultaKey || k === dataEventoKey) return;
+      displayKeys.push(k);
+    });
+
+    head.innerHTML = '';
+    const trh = document.createElement('tr');
+    displayKeys.forEach(k => {
+      const th = document.createElement('th');
+      th.textContent = k;
+      trh.appendChild(th);
+    });
+    head.appendChild(trh);
+
+    body.innerHTML = '';
+    visible.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      tr.tabIndex = 0;
+      tr.onclick = () => openObjectModal('eSocial', '', r);
+      tr.onkeydown = (e) => { if (e.key === 'Enter') openObjectModal('eSocial', '', r); };
+      displayKeys.forEach(k => {
+        const td = document.createElement('td');
+        if (k === statusKey) {
+          const meta = getEsocialStatusMeta(r?.[k]);
+          td.textContent = meta.code ? `${meta.code} - ${meta.label}` : '';
+        } else {
+          td.textContent = normalizeCell(r?.[k]);
+        }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+
+    renderEsocialPagination(total);
+  }
+
+  function onEsocialSearchChange() {
+    esocialSearch = document.getElementById('esocialSearch')?.value || '';
+    esocialPage = 1;
+    renderEsocialQueue();
+  }
+
+  function onEsocialStatusChange() {
+    esocialStatusValue = document.getElementById('esocialStatusFilter')?.value || 'all';
+    esocialPage = 1;
+    renderEsocialQueue();
+  }
+
+  async function loadEsocialQueue() {
+    const countEl = document.getElementById('esocialCount');
+    try {
+      saveApiBaseUrl();
+      saveApiProxyBaseUrl();
+      saveApiAuth();
+      const url1 = buildEsocialUrl();
+      const url2 = buildEsocialUrlWithEmptyParameters();
+      if (!url1) throw new Error('URL do eSocial inválida');
+
+      const currentUser = String(apiUser || sessionStorage.getItem('apiUser') || '').trim();
+      const now = Date.now();
+      if (currentUser && esocialLastLoadedUser === currentUser && esocialLastLoadedAt && (now - esocialLastLoadedAt) < 15000 && esocialRows.length) {
+        renderEsocialQueue();
+        if (countEl) countEl.innerText = `${esocialRows.length} registro(s)`;
+        return;
+      }
+
+      let payload;
+      try {
+        payload = await fetchRmJson(url1, { method: 'GET' });
+      } catch (e1) {
+        if (!url2 || url2 === url1) throw e1;
+        payload = await fetchRmJson(url2, { method: 'GET' });
+      }
+
+      const next = normalizeConsultaRows(payload);
+      const rawRows = Array.isArray(next) ? next : [];
+      const filtered = filterEsocialRowsForLoggedUser(rawRows);
+      esocialRows = filtered.rows;
+      esocialLastLoadedAt = Date.now();
+      esocialLastLoadedUser = currentUser;
+
+      esocialPage = 1;
+      renderEsocialQueue();
+      if (countEl) countEl.innerText = `${esocialRows.length} registro(s)`;
+      if (filtered.filtered) showToast(`eSocial: ${esocialRows.length}/${filtered.total} (usuário: ${currentUser})`, 'success');
+      else showToast(`eSocial: ${esocialRows.length} registro(s)`, 'success');
+    } catch (e) {
+      esocialRows = [];
+      renderEsocialQueue();
+      if (countEl) countEl.innerText = `Erro: ${String(e?.message || 'Falha ao consultar eSocial')}`;
+      showToast(String(e?.message || 'Falha ao consultar eSocial'), 'error');
+    }
   }
 
   function buildApiUrl(cpf) {
@@ -1876,11 +4783,49 @@
       return recs1;
     }
 
-    const batchSize = 2;
-    for (let i = 0; i < cpfs.length; i += batchSize) {
-      const batch = cpfs.slice(i, i + batchSize);
-      for (const cpf of batch) {
-        if (consultCancelRequested) break;
+    const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+    const concurrency = clamp(Number(localStorage.getItem('compareConcurrency') || '3'), 1, 10);
+    const applyEveryMs = clamp(Number(localStorage.getItem('compareApplyEveryMs') || '0'), 0, 30000);
+    let applyTimerId = null;
+    let lastProgressUiAt = 0;
+
+    const runPool = async (items, worker, limit) => {
+      const queue = items.slice();
+      const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+        while (queue.length) {
+          if (consultCancelRequested) return;
+          const cpf = queue.shift();
+          await worker(cpf);
+        }
+      });
+      await Promise.all(runners);
+    };
+
+    const updateProgressThrottled = () => {
+      const now = Date.now();
+      if (now - lastProgressUiAt < 250) return;
+      lastProgressUiAt = now;
+      updateApiProgressUi();
+    };
+
+    const applyAndRender = () => {
+      applyApiToAllRows();
+      recomputeDerivedRowsFromAllRows();
+      rebuildAndRender(false);
+      updateApiProgressUi();
+    };
+
+    if (applyEveryMs > 0) {
+      applyTimerId = setInterval(() => {
+        if (!consultStatus?.running || consultCancelRequested) return;
+        applyAndRender();
+      }, applyEveryMs);
+    }
+
+    await runPool(
+      cpfs,
+      async (cpf) => {
+        if (consultCancelRequested) return;
         try {
           const recs = await fetchRecordsForCpf(cpf);
           employeeCache[cpf] = recs;
@@ -1905,19 +4850,19 @@
           pushMonitorError('comparacao', cpf, employeeCacheErrors[cpf]);
           failCount += 1;
           consultStatus.fail += 1;
+        } finally {
+          consultStatus.done += 1;
+          updateProgressThrottled();
         }
-        consultStatus.done += 1;
-        if (consultStatus.done % 5 === 0 || consultStatus.done === consultStatus.total) {
-          applyApiToAllRows();
-          recomputeDerivedRowsFromAllRows();
-          rebuildAndRender(false);
-          updateApiProgressUi();
-        }
-      }
+      },
+      concurrency
+    );
 
-      if (consultCancelRequested) break;
-      await new Promise(r => setTimeout(r, 150));
+    if (applyTimerId) {
+      clearInterval(applyTimerId);
+      applyTimerId = null;
     }
+    applyAndRender();
 
     rebuildAndRender(true);
     consultStatus.running = false;
@@ -2236,6 +5181,54 @@
     rebuildAndRender(false);
   }
 
+  async function clearCurrentSpreadsheet() {
+    if (consultStatus?.running || integrateStatus?.running) {
+      showToast('Aguarde o processo finalizar ou cancele', 'error');
+      return;
+    }
+
+    rawContext = null;
+    dados = [];
+    allRows = [];
+    detailRows = [];
+    coverRows = [];
+    employeeCache = {};
+    employeeCacheErrors = {};
+    columnFilters = {};
+    globalSearch = '';
+    currentListPage = 1;
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    const filtroInput = document.getElementById('filtro');
+    if (filtroInput) filtroInput.value = '';
+
+    closePopover();
+    document.getElementById('mappingPanel')?.classList.add('hidden');
+    document.querySelectorAll('.th-filter').forEach(btn => btn.classList.remove('active'));
+
+    idConsultaByKey = {};
+    persistIdConsultaByKey();
+    localStorage.removeItem('coverIntegrated');
+    coverIntegrated = false;
+
+    integrationComparativoByKey = {};
+    persistIntegrationComparativoByKey();
+
+    try {
+      await idbDel('lastContext');
+    } catch {
+      return;
+    } finally {
+      renderTable(columnsByMode[importMode], []);
+      renderPagination(0);
+      updateRowCount(0, 0);
+      updateIntegrateButton();
+      renderAsoRelatorios();
+      showToast('Planilha removida', 'success');
+    }
+  }
+
   function getBaseRowsForMode() {
     return importMode === 'capa' ? coverRows : detailRows;
   }
@@ -2354,29 +5347,54 @@
   }
 
   function rebuildAndRender(recompute = true) {
-    if (recompute) {
-      allRows = buildDetailRows();
-      applyApiToAllRows();
-      recomputeDerivedRowsFromAllRows();
+    const prev = {
+      allRows,
+      detailRows,
+      coverRows,
+      dados,
+      currentListPage
+    };
+    try {
+      if (recompute) {
+        allRows = buildDetailRows();
+        applyApiToAllRows();
+        recomputeDerivedRowsFromAllRows();
+      }
+
+      const columns = columnsByMode[importMode];
+      const base = getBaseRowsForMode();
+      const withColumnFilters = applyColumnFilters(base);
+      const finalRows = applyGlobalSearch(withColumnFilters, columns);
+
+      dados = finalRows;
+      const totalPages = getTotalPages(finalRows.length);
+      currentListPage = clampNumber(currentListPage, 1, totalPages);
+      const start = (currentListPage - 1) * pageSize;
+      const visibleRows = finalRows.slice(start, start + pageSize);
+
+      renderTable(columns, visibleRows);
+      renderPagination(finalRows.length);
+
+      updateRowCount(visibleRows.length, finalRows.length);
+      updateIntegrateButton();
+      renderAsoRelatorios();
+    } catch (e) {
+      allRows = prev.allRows;
+      detailRows = prev.detailRows;
+      coverRows = prev.coverRows;
+      dados = prev.dados;
+      currentListPage = prev.currentListPage;
+      const columns = columnsByMode[importMode];
+      const totalPages = getTotalPages((dados || []).length);
+      currentListPage = clampNumber(currentListPage, 1, totalPages);
+      const start = (currentListPage - 1) * pageSize;
+      const visibleRows = (dados || []).slice(start, start + pageSize);
+      renderTable(columns, visibleRows);
+      renderPagination((dados || []).length);
+      updateRowCount(visibleRows.length, (dados || []).length);
+      updateIntegrateButton();
+      showToast(String(e?.message || 'Falha ao atualizar dados da planilha'), 'error');
     }
-
-    const columns = columnsByMode[importMode];
-    const base = getBaseRowsForMode();
-    const withColumnFilters = applyColumnFilters(base);
-    const finalRows = applyGlobalSearch(withColumnFilters, columns);
-
-    dados = finalRows;
-    const totalPages = getTotalPages(finalRows.length);
-    currentListPage = clampNumber(currentListPage, 1, totalPages);
-    const start = (currentListPage - 1) * pageSize;
-    const visibleRows = finalRows.slice(start, start + pageSize);
-
-    renderTable(columns, visibleRows);
-    renderPagination(finalRows.length);
-
-    updateRowCount(visibleRows.length, finalRows.length);
-    updateIntegrateButton();
-    renderAsoRelatorios();
   }
 
   function updateIntegrateButton() {
@@ -2394,6 +5412,199 @@
       btn.disabled = !eligible;
     }
     btn.innerText = importMode === 'capa' ? 'Integrar Capa (parte 1)' : 'Integrar Exames (parte 2)';
+
+    const clearBtn = document.getElementById('clearSheetBtn');
+    if (clearBtn) clearBtn.disabled = !rawContext;
+  }
+
+  function canDeleteRecord(item) {
+    if (!item) return false;
+    if (consultStatus?.running || integrateStatus?.running) return false;
+    const status = normalizeHeaderKey(item.comparativo);
+    const wasIntegrated = status.includes('integrado');
+    if (!wasIntegrated) return false;
+
+    const coverKey = buildCoverKey(item);
+    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
+    if (!Number.isFinite(idConsulta) || idConsulta <= 0) return false;
+
+    if (importMode === 'capa') return true;
+
+    const codExame = Number(String(item.codigoExame || '').replace(/\D/g, ''));
+    return Number.isFinite(codExame);
+  }
+
+  async function fetchRmNoParse(url, options) {
+    const token = await getRmAccessToken();
+    const headers = {
+      ...(options?.headers || {}),
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`
+    };
+    const method = String(options?.method || 'GET').toUpperCase();
+    if (method === 'DELETE') {
+      const proxyUrl = buildProxyUrl(url);
+      if (!proxyUrl) throw new Error('Proxy local não configurado');
+      await ensureProxyRunning();
+      const attempt = async (upstreamMethod) => {
+        const res = await fetch(proxyUrl, {
+          ...(options || {}),
+          method: 'POST',
+          headers: {
+            ...headers,
+            'X-HTTP-Method-Override': 'DELETE',
+            'X-Proxy-Upstream-Method': upstreamMethod
+          }
+        });
+        const text = await res.text().catch(() => '');
+        return { res, text };
+      };
+
+      const first = await attempt('POST');
+      if (first.res.ok) return first.res;
+
+      const second = await attempt('DELETE');
+      if (second.res.ok) return second.res;
+
+      const combined = second.text || first.text || '';
+      if (second.res.status === 405 || first.res.status === 405) {
+        throw new Error('RM não permite exclusão por API neste ambiente (método bloqueado).');
+      }
+      throw new Error(`HTTP ${second.res.status || first.res.status}${combined ? `: ${combined}` : ''}`);
+    }
+
+    const res = await fetchWithProxyFallback(url, { ...(options || {}), headers });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}${text ? `: ${text}` : ''}`);
+    }
+    return res;
+  }
+
+  let rmFuncionarioByCpf = null;
+
+  async function ensureRmFuncionarioCache() {
+    if (rmFuncionarioByCpf) return;
+    const payload = await fetchRmJson(buildConsultaTipoUrl('FUNCIONARIO'), { method: 'GET' });
+    const funcs = normalizeConsultaRows(payload);
+    const map = new Map();
+    funcs.forEach(r => {
+      const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
+      const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
+      if (cpf && Number.isFinite(codPessoa) && !map.has(cpf)) map.set(cpf, codPessoa);
+    });
+    rmFuncionarioByCpf = map;
+  }
+
+  async function deleteCapaOnRm(item) {
+    await ensureRmFuncionarioCache();
+    const cpf = cpfDigits(item.cpf);
+    const codPessoa = rmFuncionarioByCpf?.get(cpf) || 0;
+    if (!codPessoa) throw new Error('CODPESSOA não encontrado');
+
+    const coverKey = buildCoverKey(item);
+    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
+    if (!Number.isFinite(idConsulta) || idConsulta <= 0) throw new Error('IDCONSULTA inválido');
+
+    const candidates = [
+      `1;${codPessoa};${idConsulta}`,
+      `${codPessoa};${idConsulta}`,
+      `${idConsulta}`
+    ];
+
+    const base = buildInsertCapaUrl();
+    let lastError = null;
+    for (const id of candidates) {
+      const url = `${base}/${encodeURIComponent(id)}`;
+      try {
+        await fetchRmNoParse(url, {
+          method: 'DELETE',
+          headers: { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) }
+        });
+        lastError = null;
+        break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (lastError) throw lastError;
+
+    item.comparativo = 'Excluído (RM)';
+    integrationComparativoByKey[coverKey] = item.comparativo;
+    persistIntegrationComparativoByKey();
+    delete idConsultaByKey[coverKey];
+    persistIdConsultaByKey();
+  }
+
+  async function deleteExameOnRm(item) {
+    await ensureRmFuncionarioCache();
+    const cpf = cpfDigits(item.cpf);
+    const codPessoa = rmFuncionarioByCpf?.get(cpf) || 0;
+    if (!codPessoa) throw new Error('CODPESSOA não encontrado');
+
+    const coverKey = buildCoverKey(item);
+    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
+    if (!Number.isFinite(idConsulta) || idConsulta <= 0) throw new Error('IDCONSULTA inválido');
+    const codExame = Number(String(item.codigoExame || '').replace(/\D/g, ''));
+    if (!Number.isFinite(codExame)) throw new Error('CODEXAME inválido');
+
+    const urlBase = new URL(apiBaseUrl || defaultApiBaseUrl).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
+    const candidates = [
+      `1;${codPessoa};${idConsulta};${codExame}`,
+      `${codPessoa};${idConsulta};${codExame}`,
+      `${idConsulta};${codExame}`
+    ];
+
+    let lastError = null;
+    for (const id of candidates) {
+      const url = `${urlBase}/${encodeURIComponent(id)}`;
+      try {
+        await fetchRmNoParse(url, {
+          method: 'DELETE',
+          headers: { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) }
+        });
+        lastError = null;
+        break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (lastError) throw lastError;
+
+    const examKey = buildExamKey(item);
+    item.comparativo = 'Excluído (RM)';
+    integrationComparativoByKey[examKey] = item.comparativo;
+    persistIntegrationComparativoByKey();
+  }
+
+  function confirmDeleteRecord(item) {
+    if (!canDeleteRecord(item)) return;
+    const coverKey = buildCoverKey(item);
+    const idConsulta = idConsultaByKey?.[coverKey] || item.idConsulta || '';
+    const title = importMode === 'capa' ? 'Excluir CAPA no RM' : 'Excluir EXAME no RM';
+    const details =
+      importMode === 'capa'
+        ? `CPF: ${formatCpf(item.cpf) || item.cpf}\nCHAPA: ${item.matriculaApi || item.matricula}\nIDCONSULTA: ${idConsulta}`
+        : `CPF: ${formatCpf(item.cpf) || item.cpf}\nCHAPA: ${item.matriculaApi || item.matricula}\nIDCONSULTA: ${idConsulta}\nCODEXAME: ${item.codigoExame}`;
+    openConfirmModal(
+      title,
+      'Esta ação tenta excluir o registro no RM e não pode ser desfeita.',
+      details,
+      'Excluir',
+      async () => {
+        try {
+          if (importMode === 'capa') {
+            await deleteCapaOnRm(item);
+          } else {
+            await deleteExameOnRm(item);
+          }
+          rebuildAndRender(false);
+          showToast('Registro excluído no RM', 'success');
+        } catch (e) {
+          showToast(String(e?.message || 'Falha ao excluir'), 'error');
+        }
+      }
+    );
   }
 
   function renderTable(columns, rows) {
@@ -2414,16 +5625,16 @@
 
       const label = document.createElement('span');
       label.textContent = col.label;
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'th-filter';
-      btn.textContent = '▾';
-      btn.onclick = (e) => openColumnFilter(col.key, e);
-      if (columnFilters[col.key] instanceof Set) btn.classList.add('active');
-
       wrap.appendChild(label);
-      wrap.appendChild(btn);
+      if (col.key !== '__actions') {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'th-filter';
+        btn.textContent = '▾';
+        btn.onclick = (e) => openColumnFilter(col.key, e);
+        if (columnFilters[col.key] instanceof Set) btn.classList.add('active');
+        wrap.appendChild(btn);
+      }
       th.appendChild(wrap);
       tr.appendChild(th);
     });
@@ -2438,13 +5649,196 @@
 
     rows.forEach(item => {
       const tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      tr.tabIndex = 0;
+      tr.onkeydown = (e) => {
+        if (e.key === 'Enter') openRecordModal(item);
+      };
+      tr.onclick = () => openRecordModal(item);
       columns.forEach(col => {
         const td = document.createElement('td');
-        td.textContent = normalizeCell(item[col.key]);
+        if (col.key === '__actions') {
+          td.style.whiteSpace = 'nowrap';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'button button--danger';
+          btn.textContent = 'Excluir';
+          btn.disabled = !canDeleteRecord(item);
+          btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            confirmDeleteRecord(item);
+          };
+          td.appendChild(btn);
+        } else {
+          td.textContent = normalizeCell(item[col.key]);
+        }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
+  }
+
+  function getRecordModalFields(item) {
+    const base = [
+      { label: 'Nome', value: item.nomeFuncionario },
+      { label: 'CPF', value: formatCpf(item.cpf) || item.cpf },
+      { label: 'Matrícula', value: item.matricula },
+      { label: 'Matrícula (API)', value: item.matriculaApi },
+      { label: 'Situação', value: item.situacao },
+      { label: 'Data da Ficha', value: item.dataFicha },
+      { label: 'Tipo de Exame', value: item.tipoExame },
+      { label: 'Nome Examinador', value: item.nomeExaminador },
+      { label: 'Parecer (ASO)', value: item.parecerAso },
+      { label: 'IDCONSULTA', value: item.idConsulta },
+      { label: 'Comparativo', value: item.comparativo }
+    ];
+
+    if (importMode === 'exames') {
+      base.splice(6, 0,
+        { label: 'Ref./Seq.', value: item.refSeq },
+        { label: 'Nome do Exame', value: item.nomeExame },
+        { label: 'Código do Exame', value: item.codigoExame },
+        { label: 'Data Res. Exame', value: item.dataResExame }
+      );
+    } else {
+      base.splice(6, 0, { label: 'Qtd. Exames', value: item.qtdeExames });
+    }
+
+    base.push(
+      { label: 'Empresa', value: item.empresa },
+      { label: 'Unidade', value: item.unidade },
+      { label: 'Setor', value: item.setor },
+      { label: 'Cargo', value: item.cargo }
+    );
+
+    return base.filter(f => normalizeCell(f.value) !== '');
+  }
+
+  function openRecordModal(item) {
+    const overlay = document.getElementById('recordModalOverlay');
+    const title = document.getElementById('recordModalTitle');
+    const subtitle = document.getElementById('recordModalSubtitle');
+    const body = document.getElementById('recordModalBody');
+    if (!overlay || !title || !subtitle || !body) return;
+
+    const modeLabel = importMode === 'exames' ? 'Exame' : 'Capa';
+    title.innerText = `${modeLabel}`;
+    subtitle.innerText = `${normalizeCell(item.nomeFuncionario)} • ${formatCpf(item.cpf) || normalizeCell(item.cpf)}`.trim();
+
+    body.innerHTML = '';
+    const fields = getRecordModalFields(item);
+    fields.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'kv';
+
+      const k = document.createElement('div');
+      k.className = 'kv__k';
+      k.textContent = f.label;
+
+      const v = document.createElement('div');
+      v.className = 'kv__v';
+      v.textContent = normalizeCell(f.value);
+
+      row.appendChild(k);
+      row.appendChild(v);
+      body.appendChild(row);
+    });
+
+    overlay.classList.remove('hidden');
+    document.addEventListener('keydown', onRecordModalKeyDown, true);
+  }
+
+  function openObjectModal(titleText, subtitleText, obj) {
+    const overlay = document.getElementById('recordModalOverlay');
+    const title = document.getElementById('recordModalTitle');
+    const subtitle = document.getElementById('recordModalSubtitle');
+    const body = document.getElementById('recordModalBody');
+    if (!overlay || !title || !subtitle || !body) return;
+
+    title.innerText = String(titleText || 'Registro');
+    subtitle.innerText = String(subtitleText || '');
+
+    const entries = obj && typeof obj === 'object' ? Object.entries(obj) : [];
+    const filtered = entries
+      .map(([k, v]) => [String(k), normalizeCell(v)])
+      .filter(([, v]) => v !== '');
+
+    filtered.sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'));
+
+    body.innerHTML = '';
+    filtered.forEach(([kText, vText]) => {
+      const row = document.createElement('div');
+      row.className = 'kv';
+
+      const k = document.createElement('div');
+      k.className = 'kv__k';
+      k.textContent = kText;
+
+      const v = document.createElement('div');
+      v.className = 'kv__v';
+      v.textContent = vText;
+
+      row.appendChild(k);
+      row.appendChild(v);
+      body.appendChild(row);
+    });
+
+    overlay.classList.remove('hidden');
+    document.addEventListener('keydown', onRecordModalKeyDown, true);
+  }
+
+  let confirmModalState = null;
+
+  function openConfirmModal(titleText, messageText, detailsText, confirmLabelText, onConfirm) {
+    const overlay = document.getElementById('confirmModalOverlay');
+    const title = document.getElementById('confirmModalTitle');
+    const msg = document.getElementById('confirmModalMessage');
+    const details = document.getElementById('confirmModalDetails');
+    const btn = document.getElementById('confirmModalConfirmBtn');
+    if (!overlay || !title || !msg || !details || !btn) return;
+
+    title.innerText = String(titleText || 'Confirmação');
+    msg.innerText = String(messageText || '');
+    details.innerText = String(detailsText || '');
+    btn.innerText = String(confirmLabelText || 'Confirmar');
+
+    confirmModalState = { onConfirm: typeof onConfirm === 'function' ? onConfirm : null };
+    overlay.classList.remove('hidden');
+    document.addEventListener('keydown', onConfirmModalKeyDown, true);
+  }
+
+  function closeConfirmModal(confirmed) {
+    const overlay = document.getElementById('confirmModalOverlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    document.removeEventListener('keydown', onConfirmModalKeyDown, true);
+    const state = confirmModalState;
+    confirmModalState = null;
+    if (confirmed && state?.onConfirm) state.onConfirm();
+  }
+
+  function onConfirmModalKeyDown(e) {
+    if (e.key === 'Escape') closeConfirmModal(false);
+  }
+
+  function onConfirmModalOverlayClick(e) {
+    if (e.target?.id === 'confirmModalOverlay') closeConfirmModal(false);
+  }
+
+  function closeRecordModal() {
+    const overlay = document.getElementById('recordModalOverlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    document.removeEventListener('keydown', onRecordModalKeyDown, true);
+  }
+
+  function onRecordModalKeyDown(e) {
+    if (e.key === 'Escape') closeRecordModal();
+  }
+
+  function onRecordModalOverlayClick(e) {
+    if (e.target?.id === 'recordModalOverlay') closeRecordModal();
   }
 
   function closePopover() {
@@ -2624,36 +6018,61 @@
     const file = document.getElementById('fileInput').files[0];
 
     if (!file) return;
+    if (consultStatus?.running || integrateStatus?.running) {
+      showToast('Aguarde o processo finalizar ou cancele antes de carregar outra planilha', 'error');
+      return;
+    }
 
     const reader = new FileReader();
     const ext = getFileExtension(file.name);
 
     reader.onload = function(e) {
+      const prev = {
+        rawContext,
+        dados,
+        allRows,
+        detailRows,
+        coverRows,
+        employeeCache,
+        employeeCacheErrors,
+        columnFilters,
+        globalSearch,
+        currentListPage
+      };
       try {
+        let nextContext;
         if (ext === 'xlsx' || ext === 'xls') {
-          rawContext = parseXlsxArrayBufferToContext(e.target.result);
+          nextContext = parseXlsxArrayBufferToContext(e.target.result);
         } else {
-          rawContext = parseCsvTextToContext(e.target.result);
+          nextContext = parseCsvTextToContext(e.target.result);
         }
 
-        if (!rawContext) throw new Error('Arquivo vazio ou inválido');
-        rawContext.fileName = file.name;
+        if (!nextContext) throw new Error('Arquivo vazio ou inválido');
+        nextContext.fileName = file.name;
 
+        rawContext = nextContext;
+        resetImportTrackingSnapshot(file.name);
         buildMappingUI();
         currentListPage = 1;
         rebuildAndRender(true);
         void saveLastContext();
+        renderImportTrackingPanels();
         showToast('Arquivo carregado com sucesso', 'success');
       } catch (err) {
-        rawContext = null;
-        dados = [];
-        detailRows = [];
-        coverRows = [];
-        renderTable(columnsByMode[importMode], dados);
-        renderPagination(0);
-        updateRowCount(0, 0);
-        updateIntegrateButton();
-        showToast(err?.message || 'Falha ao ler o arquivo', 'error');
+        rawContext = prev.rawContext;
+        dados = prev.dados;
+        allRows = prev.allRows;
+        detailRows = prev.detailRows;
+        coverRows = prev.coverRows;
+        employeeCache = prev.employeeCache;
+        employeeCacheErrors = prev.employeeCacheErrors;
+        columnFilters = prev.columnFilters;
+        globalSearch = prev.globalSearch;
+        currentListPage = prev.currentListPage;
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.value = '';
+        rebuildAndRender(false);
+        showToast(String(err?.message || 'Falha ao ler o arquivo'), 'error');
       }
     };
 
@@ -3311,6 +6730,7 @@
     if (!active) {
       wrap.classList.add('hidden');
       stopApiProgressTimer();
+      renderImportTrackingPanels();
       return;
     }
 
@@ -3335,6 +6755,7 @@
     cancelBtn.disabled = Boolean(active.canceling);
     wrap.classList.toggle('api-progress--canceling', Boolean(active.canceling));
     renderMonitorPanel();
+    renderImportTrackingPanels();
   }
 
   function startApiProgressTimer() {
@@ -3354,6 +6775,34 @@
     apiProgressTimerId = null;
   }
 
+  let topbarClockTimerId = null;
+
+  function formatNowPtBr() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+  }
+
+  function updateTopbarMeta() {
+    const greetingEl = document.getElementById('topbarGreeting');
+    const clockEl = document.getElementById('topbarClock');
+    if (!greetingEl || !clockEl) return;
+    const user = String(apiUser || sessionStorage.getItem('apiUser') || '').trim();
+    greetingEl.innerText = user ? `Olá, ${user}` : 'Olá';
+    clockEl.innerText = formatNowPtBr();
+  }
+
+  function startTopbarClock() {
+    updateTopbarMeta();
+    if (topbarClockTimerId) return;
+    topbarClockTimerId = setInterval(updateTopbarMeta, 1000);
+  }
+
   applyModuleState();
   loadApiBaseUrlToUI();
   loadApiProxyBaseUrlToUI();
@@ -3362,6 +6811,7 @@
   updateIntegrateButton();
   showPage(currentPage);
   void restoreLastContext();
+  startTopbarClock();
 </script>
 
 </body>

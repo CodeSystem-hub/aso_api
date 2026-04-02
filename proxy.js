@@ -30,8 +30,8 @@ async function handler(req, res) {
       204,
       {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization, Accept, Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Accept, Content-Type, X-HTTP-Method-Override, X-Proxy-Upstream-Method',
         'Access-Control-Max-Age': '86400'
       },
       ''
@@ -193,9 +193,12 @@ async function handler(req, res) {
     };
     if (req.headers.authorization) headers.Authorization = req.headers.authorization;
     if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type'];
+    if (req.headers['x-http-method-override']) headers['X-HTTP-Method-Override'] = req.headers['x-http-method-override'];
 
     const method = (req.method || 'GET').toUpperCase();
-    if (method !== 'GET' && method !== 'POST') {
+    const requestedUpstreamMethod = String(req.headers['x-proxy-upstream-method'] || '').toUpperCase();
+    const upstreamMethod = ['GET', 'POST', 'DELETE'].includes(requestedUpstreamMethod) ? requestedUpstreamMethod : method;
+    if (upstreamMethod !== 'GET' && upstreamMethod !== 'POST' && upstreamMethod !== 'DELETE') {
       send(
         res,
         405,
@@ -209,7 +212,7 @@ async function handler(req, res) {
     }
 
     const bodyBuffer = await new Promise((resolve, reject) => {
-      if (method === 'GET') return resolve(Buffer.alloc(0));
+      if (upstreamMethod === 'GET' || upstreamMethod === 'DELETE') return resolve(Buffer.alloc(0));
       const chunks = [];
       req.on('data', (c) => chunks.push(c));
       req.on('end', () => resolve(Buffer.concat(chunks)));
@@ -221,13 +224,13 @@ async function handler(req, res) {
       const r = https.request(
         urlObj,
         {
-          method,
+          method: upstreamMethod,
           headers
         },
         resolve
       );
       r.on('error', reject);
-      if (method === 'POST') r.write(bodyBuffer);
+      if (upstreamMethod === 'POST') r.write(bodyBuffer);
       r.end();
     });
 
