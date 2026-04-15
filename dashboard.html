@@ -1105,12 +1105,20 @@
   }
 
   function getActiveApiBaseUrl() {
+    const envBase = String(getApiBaseUrlForEnv(apiEnv) || '').trim();
     const base = String(apiBaseUrl || '').trim();
-    return base || getApiBaseUrlForEnv(apiEnv);
+    if (!base) return envBase;
+    const prodBase = String(defaultApiBaseUrlProd || '').trim();
+    const testBase = String(defaultApiBaseUrlTest || '').trim();
+    const looksLikeProd = prodBase && base === prodBase;
+    const looksLikeTest = testBase && base === testBase;
+    if (apiEnv === 'prod' && looksLikeTest) return envBase;
+    if (apiEnv === 'test' && looksLikeProd) return envBase;
+    return base;
   }
 
-  const storedApiBaseUrl = localStorage.getItem('apiBaseUrl');
-  let apiBaseUrl = normalizeApiBaseUrl(storedApiBaseUrl, apiEnv);
+  let apiBaseUrl = normalizeApiBaseUrl(getApiBaseUrlForEnv(apiEnv), apiEnv);
+  localStorage.setItem('apiBaseUrl', apiBaseUrl);
   const defaultProxyBaseUrl = buildDefaultProxyBaseUrl();
   let apiProxyBaseUrl = normalizeApiProxyBaseUrl(localStorage.getItem('apiProxyBaseUrl'));
   let apiAuthMethod = sessionStorage.getItem('apiAuthMethod') || 'none';
@@ -6371,22 +6379,82 @@
     filteredCoverKeysActive = hasActiveListFilters();
   }
 
-  function getScopedExamRows() {
-    const rows = Array.isArray(detailRows) ? detailRows : [];
-    if (!filteredCoverKeysActive) return rows;
-    if (!(filteredCoverKeys instanceof Set) || filteredCoverKeys.size === 0) return [];
-    return rows.filter(r => filteredCoverKeys.has(buildCoverKey(r)));
+  function hasSavedListFilters(mode) {
+    if (mode === 'capa') return Boolean(String(coverGlobalSearch || '').trim()) || Object.values(coverColumnFilters || {}).some(v => v instanceof Set);
+    return Boolean(String(examGlobalSearch || '').trim()) || Object.values(examColumnFilters || {}).some(v => v instanceof Set);
   }
 
-  function getEffectiveExamRows() {
-    const scoped = getScopedExamRows();
-    const allExamRows = Array.isArray(detailRows) ? detailRows : [];
-    if (filteredCoverKeysActive && scoped.length === 0 && allExamRows.length > 0) return allExamRows;
-    return scoped;
+  function resolveRowsForStoredFilters(mode) {
+    const columns = columnsByMode[mode];
+    const availableKeys = getAvailableColumnKeys(columns);
+    const savedColumnFilters = mode === 'capa' ? coverColumnFilters : examColumnFilters;
+    const savedSearch = String(mode === 'capa' ? coverGlobalSearch : examGlobalSearch || '');
+    const rows = mode === 'capa' ? (Array.isArray(coverRows) ? coverRows : []) : (Array.isArray(detailRows) ? detailRows : []);
+
+    const withColumnFilters = rows.filter(r => {
+      for (const key of Object.keys(savedColumnFilters || {})) {
+        if (availableKeys instanceof Set && !availableKeys.has(key)) continue;
+        const set = savedColumnFilters[key];
+        if (!(set instanceof Set)) continue;
+        if (set.size === 0) return false;
+        const value = normalizeCell(r[key]);
+        if (!set.has(value)) return false;
+      }
+      return true;
+    });
+
+    if (!savedSearch) return withColumnFilters;
+    return withColumnFilters.filter(r => columns.some(c => normalizeCell(r[c.key]).toLowerCase().includes(savedSearch)));
+  }
+
+  function intersectSets(base, next) {
+    const out = new Set();
+    base.forEach(v => {
+      if (next.has(v)) out.add(v);
+    });
+    return out;
+  }
+
+  function recomputeSharedFilteredCoverScope() {
+    const allCoverKeys = new Set((Array.isArray(coverRows) ? coverRows : []).map(r => buildCoverKey(r)).filter(Boolean));
+    const coverActive = hasSavedListFilters('capa');
+    const examActive = hasSavedListFilters('exames');
+
+    if (!coverActive && !examActive) {
+      filteredCoverKeys = allCoverKeys;
+      filteredCoverKeysActive = false;
+      return;
+    }
+
+    let scope = new Set(allCoverKeys);
+
+    if (coverActive) {
+      const coverKeys = new Set(resolveRowsForStoredFilters('capa').map(r => buildCoverKey(r)).filter(Boolean));
+      scope = intersectSets(scope, coverKeys);
+    }
+
+    if (examActive) {
+      const examKeys = new Set(resolveRowsForStoredFilters('exames').map(r => buildCoverKey(r)).filter(Boolean));
+      scope = intersectSets(scope, examKeys);
+    }
+
+    filteredCoverKeys = scope;
+    filteredCoverKeysActive = true;
+  }
+
+  function applySharedCoverScope(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (!filteredCoverKeysActive) return list;
+    if (!(filteredCoverKeys instanceof Set) || filteredCoverKeys.size === 0) return [];
+    return list.filter(r => filteredCoverKeys.has(buildCoverKey(r)));
+  }
+
+  function getScopedExamRows() {
+    return applySharedCoverScope(Array.isArray(detailRows) ? detailRows : []);
   }
 
   function getBaseRowsForMode() {
-    return importMode === 'capa' ? coverRows : getEffectiveExamRows();
+    return importMode === 'capa' ? applySharedCoverScope(Array.isArray(coverRows) ? coverRows : []) : getScopedExamRows();
   }
 
   function applyColumnFilters(rows, exceptKey, availableKeys) {
@@ -6429,6 +6497,7 @@
     coverRows = buildCoverRows(allRows);
     filteredCoverKeys = new Set((Array.isArray(coverRows) ? coverRows : []).map(r => buildCoverKey(r)));
     filteredCoverKeysActive = false;
+    recomputeSharedFilteredCoverScope();
   }
 
   function clampNumber(value, min, max) {
@@ -6529,13 +6598,8 @@
       };
 
       let finalRows;
-      if (importMode === 'exames') {
-        const scopedRows = resolveFilteredRows(getScopedExamRows());
-        const allExamRows = resolveFilteredRows(Array.isArray(detailRows) ? detailRows : []);
-        finalRows = filteredCoverKeysActive && scopedRows.length === 0 && allExamRows.length > 0 ? allExamRows : scopedRows;
-      } else {
-        finalRows = resolveFilteredRows(getBaseRowsForMode());
-      }
+      recomputeSharedFilteredCoverScope();
+      finalRows = resolveFilteredRows(getBaseRowsForMode());
 
       if (preserveRenderedRowsOnce && finalRows.length === 0 && Array.isArray(prev.dados) && prev.dados.length > 0) {
         preserveRenderedRowsOnce = false;
@@ -6594,7 +6658,7 @@
     if (importMode === 'capa') {
       btn.disabled = dados.length === 0;
     } else {
-      btn.disabled = dados.length === 0;
+      btn.disabled = dados.length === 0 || (integrateStatus.running && integrateStatus.phase === 'capa');
     }
     btn.innerText = importMode === 'capa' ? 'Integrar Capa (parte 1)' : 'Integrar Exames (parte 2)';
 
@@ -7956,6 +8020,10 @@
     }
 
     if (importMode === 'exames') {
+      if (integrateStatus.running && integrateStatus.phase === 'capa') {
+        showToast('Aguarde o processamento da capa antes de integrar exames', 'error');
+        return;
+      }
       try {
         const coverByKey = new Map((Array.isArray(coverRows) ? coverRows : []).map(c => [buildCoverKey(c), c]));
         const coversNeededMap = new Map();
