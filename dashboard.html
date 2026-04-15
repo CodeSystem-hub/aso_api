@@ -1167,7 +1167,7 @@
   })();
 
   function buildDefaultProxyBaseUrl() {
-    if ((window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8787') {
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
       return `${window.location.origin}/proxy?target=`;
     }
     return 'http://localhost:8787/proxy?target=';

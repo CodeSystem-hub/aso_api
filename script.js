@@ -15,7 +15,7 @@ form.addEventListener("submit", async (e) => {
   const defaultApiBaseUrlTest =
     "https://institutode139487.rm.cloudtotvs.com.br:2051/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0006/0/V/?parameters=CODCOLIGADA=0;TIPO=funcionario;CPF={cpf}";
   const defaultProxyBaseUrl =
-    (window.location.protocol === "http:" || window.location.protocol === "https:") && window.location.port === "8787"
+    (window.location.protocol === "http:" || window.location.protocol === "https:")
       ? `${window.location.origin}/proxy?target=`
       : "http://localhost:8787/proxy?target=";
 
