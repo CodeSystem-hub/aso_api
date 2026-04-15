@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 historico/*.xlsx
 .DS_Store
+historico/

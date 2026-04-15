@@ -41,6 +41,10 @@
       </div>
 
       <button class="nav-item nav-item--danger nav-item--logout" type="button" onclick="logout()">Sair</button>
+      <div class="nav-session">
+        <div id="sessionEnvInfo" class="meta"></div>
+        <div class="nav-footer-note meta">{CSH} 1.0</div>
+      </div>
     </nav>
   </aside>
 
@@ -63,7 +67,7 @@
             <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.64-.8 3.09-2.03 4l1.46 1.46A6.982 6.982 0 0 0 19 13c0-3.87-3.13-7-7-7zm-5.43.73L5.11 5.27A6.982 6.982 0 0 0 5 11c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.64.8-3.09 2.03-4L6.57 6.73z" fill="currentColor"></path>
           </svg>
         </button>
-        <button class="button" type="button" onclick="consultarComparar()">Consultar/Comparar</button>
+        <button id="compareBtn" class="button" type="button" onclick="consultarComparar()">Consultar/Comparar</button>
         <button id="integrarBtn" class="button button--primary" type="button" onclick="integrar()">Integrar</button>
       </div>
     </div>
@@ -73,6 +77,9 @@
         <div id="apiProgressTitle" class="api-progress__title">Processo</div>
         <div class="api-progress__actions">
           <div id="apiProgressText" class="meta"></div>
+          <button id="apiProgressPause" class="icon-button icon-button--process hidden" type="button" onclick="togglePauseProcessoAtual()" aria-label="Pausar processo" title="Pausar processo">
+            <span id="apiProgressPauseIcon" aria-hidden="true">⏸</span>
+          </button>
           <button id="apiProgressCancel" class="button" type="button" onclick="cancelarProcessoAtual()">Cancelar</button>
         </div>
       </div>
@@ -91,9 +98,9 @@
             <div class="muted import-hint">Carregue um CSV ou XLSX, revise e integre.</div>
           </div>
           <div class="import-bar__right">
-            <label class="file-button">
+            <label id="fileButtonLabel" class="file-button">
               <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="loadFile()">
-              Selecionar arquivo
+              <span id="fileButtonText">Selecionar arquivo</span>
             </label>
           </div>
         </div>
@@ -108,15 +115,36 @@
             <div id="rowCount" class="meta"></div>
           </div>
 
-          <div class="import-bar__right">
-            <button class="button" type="button" onclick="toggleMappingPanel()">Mapeamento</button>
-            <button class="button" type="button" onclick="clearAllFilters()">Limpar filtros</button>
-            <button id="clearSheetBtn" class="button" type="button" onclick="clearCurrentSpreadsheet()">Limpar planilha</button>
+          <div class="import-bar__right import-actions">
+            <button class="button button--icon-mobile" type="button" onclick="toggleMappingPanel()" title="Mapeamento" aria-label="Mapeamento">
+              <span class="button__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M4 7h10v2H4V7zm0 8h10v2H4v-2zm12-9h4v4h-4V6zm0 8h4v4h-4v-4z" fill="currentColor"></path>
+                </svg>
+              </span>
+              <span class="button__text">Mapeamento</span>
+            </button>
+            <button class="button button--icon-mobile" type="button" onclick="clearAllFilters()" title="Limpar filtros" aria-label="Limpar filtros">
+              <span class="button__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" fill="currentColor"></path>
+                </svg>
+              </span>
+              <span class="button__text">Limpar filtros</span>
+            </button>
+            <button id="clearSheetBtn" class="button button--icon-mobile" type="button" onclick="clearCurrentSpreadsheet()" title="Limpar planilha" aria-label="Limpar planilha">
+              <span class="button__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 4h10l1 2h3v2H3V6h3l1-2zm1 6h2v8H8v-8zm6 0h2v8h-2v-8zM6 10h2v8H6v-8zm3-4-.5 1h7L15 6H9z" fill="currentColor"></path>
+                </svg>
+              </span>
+              <span class="button__text">Limpar planilha</span>
+            </button>
           </div>
         </div>
 
         <div id="importTrackingPanels" class="monitor-grid monitor-grid--import hidden">
-          <div class="monitor-card monitor-card--compact">
+          <div class="monitor-card monitor-card--compact" data-phase="comparacao">
             <div class="monitor-card__head">
               <div class="monitor-card__title">Comparação <span id="impCompareDot" class="live-dot hidden" aria-hidden="true"></span></div>
               <div id="impCompareStatus" class="meta"></div>
@@ -143,7 +171,7 @@
             <div id="impCompareSub" class="meta monitor-process__sub"></div>
           </div>
 
-          <div class="monitor-card monitor-card--compact">
+          <div class="monitor-card monitor-card--compact" data-phase="capa">
             <div class="monitor-card__head">
               <div class="monitor-card__title">Integração Capa <span id="impCapaDot" class="live-dot hidden" aria-hidden="true"></span></div>
               <div id="impCapaStatus" class="meta"></div>
@@ -168,9 +196,13 @@
               </div>
             </div>
             <div id="impCapaSub" class="meta monitor-process__sub"></div>
+            <div class="process-card__actions">
+              <button id="impCapaRetryBtn" class="button" type="button" onclick="reprocessarFalhasIntegracao('capa')">Processar falhas</button>
+              <button id="impCapaVerifyBtn" class="button" type="button" onclick="verificarIntegracaoNoRm('capa')">Verificar no RM</button>
+            </div>
           </div>
 
-          <div class="monitor-card monitor-card--compact">
+          <div class="monitor-card monitor-card--compact" data-phase="exames">
             <div class="monitor-card__head">
               <div class="monitor-card__title">Integração Exames <span id="impExamesDot" class="live-dot hidden" aria-hidden="true"></span></div>
               <div id="impExamesStatus" class="meta"></div>
@@ -195,6 +227,10 @@
               </div>
             </div>
             <div id="impExamesSub" class="meta monitor-process__sub"></div>
+            <div class="process-card__actions">
+              <button id="impExamesRetryBtn" class="button" type="button" onclick="reprocessarFalhasIntegracao('exames')">Processar falhas</button>
+              <button id="impExamesVerifyBtn" class="button" type="button" onclick="verificarIntegracaoNoRm('exames')">Verificar no RM</button>
+            </div>
           </div>
         </div>
 
@@ -209,6 +245,15 @@
           <div class="mapping__field" style="max-width:520px;">
             <div class="mapping__label">API (GET para consulta pré-integração)</div>
             <input id="apiBaseUrlInput" class="input" placeholder="https://sua-api/colaboradores?cpf=" onblur="saveApiBaseUrl()">
+          </div>
+
+          <div class="mapping__actions" style="justify-content:flex-start; padding: 0 4px; gap: 14px;">
+            <label class="toggle toggle--small">
+              <input type="checkbox" id="apiEnvToggle" onchange="onApiEnvToggleChange()">
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+              <span id="apiEnvLabel" class="meta">Produção</span>
+            </label>
+            <div class="meta">Troca a base do RM (produção/teste).</div>
           </div>
 
           <div class="mapping__field" style="max-width:520px;">
@@ -487,6 +532,8 @@
                 <option value="all">Parecer: Todos</option>
                 <option value="APTO">Parecer: APTO</option>
                 <option value="INAPTO">Parecer: INAPTO</option>
+                <option value="APTO COM RESTRICOES">Parecer: Apto com restricoes</option>
+                <option value="PENDENTE">Parecer: Pendente</option>
                 <option value="INDEFINIDO">Parecer: Indefinido</option>
               </select>
               <label class="check report-filters__check">
@@ -546,7 +593,7 @@
             <div class="report-panel">
             <div class="report-panel__head">
               <div class="report-panel__title">Parecer do ASO</div>
-              <div class="meta">Apto / Inapto / Indefinido</div>
+              <div class="meta">Apto / Inapto / Restricoes / Pendente / Indefinido</div>
             </div>
             <div class="pie-chart pie-chart--enhanced" id="reportParecerChart">
               <div class="pie-chart__container">
@@ -1029,22 +1076,48 @@
   let dados = [];
   let rawContext = null;
   let importMode = 'capa';
-  const asoCoverCode = '10101012';
   let allRows = [];
   let detailRows = [];
   let coverRows = [];
   let columnFilters = {};
   let globalSearch = '';
+  let coverColumnFilters = {};
+  let coverGlobalSearch = '';
+  let examColumnFilters = {};
+  let examGlobalSearch = '';
+  let filteredCoverKeys = new Set();
+  let filteredCoverKeysActive = false;
   let activePopover = null;
   let activePopoverKey = null;
+  let preserveRenderedRowsOnce = false;
   let coverIntegrated = localStorage.getItem('coverIntegrated') === '1';
-  const defaultApiBaseUrl = 'https://institutode139487.rm.cloudtotvs.com.br:2051/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0006/0/V/?parameters=CODCOLIGADA=0;TIPO=funcionario;CPF={cpf}';
-  let apiBaseUrl = localStorage.getItem('apiBaseUrl') || defaultApiBaseUrl;
-  let apiProxyBaseUrl = localStorage.getItem('apiProxyBaseUrl') || 'http://localhost:8787/proxy?target=';
+  const defaultApiBaseUrlProd = 'https://institutode137168.rm.cloudtotvs.com.br:8051/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0006/0/V/?parameters=CODCOLIGADA=0;TIPO=funcionario;CPF={cpf}';
+  const defaultApiBaseUrlTest = 'https://institutode139487.rm.cloudtotvs.com.br:2051/api/framework/v1/consultaSQLServer/RealizaConsulta/API.0006/0/V/?parameters=CODCOLIGADA=0;TIPO=funcionario;CPF={cpf}';
+  let apiEnv = localStorage.getItem('apiEnv') === 'test' ? 'test' : 'prod';
+
+  function getApiBaseUrlForEnv(env) {
+    if (env === 'test') {
+      const saved = String(localStorage.getItem('apiBaseUrlTest') || '').trim();
+      return saved || defaultApiBaseUrlTest;
+    }
+    const saved = String(localStorage.getItem('apiBaseUrlProd') || '').trim();
+    return saved || defaultApiBaseUrlProd;
+  }
+
+  function getActiveApiBaseUrl() {
+    const base = String(apiBaseUrl || '').trim();
+    return base || getApiBaseUrlForEnv(apiEnv);
+  }
+
+  const storedApiBaseUrl = localStorage.getItem('apiBaseUrl');
+  let apiBaseUrl = normalizeApiBaseUrl(storedApiBaseUrl, apiEnv);
+  const defaultProxyBaseUrl = buildDefaultProxyBaseUrl();
+  let apiProxyBaseUrl = normalizeApiProxyBaseUrl(localStorage.getItem('apiProxyBaseUrl'));
   let apiAuthMethod = sessionStorage.getItem('apiAuthMethod') || 'none';
   let apiUser = sessionStorage.getItem('apiUser') || '';
   let apiPass = sessionStorage.getItem('apiPass') || '';
   let apiBearerToken = sessionStorage.getItem('apiBearerToken') || '';
+  let proxyHealthOkUntil = 0;
   let esocialRows = [];
   let esocialSearch = '';
   let esocialStatusValue = 'all';
@@ -1059,9 +1132,15 @@
   let currentConsultAbortController = null;
   let apiProgressTimerId = null;
   let apiDebug = { lastCpf: '', lastUrl: '', usedProxy: false, status: '', message: '' };
-  let integrateStatus = { running: false, phase: '', done: 0, total: 0, ok: 0, fail: 0, startedAt: 0 };
+  let integrateStatus = { running: false, phase: '', done: 0, total: 0, ok: 0, fail: 0, startedAt: 0, paused: false, batchSize: 25 };
   let integrateCancelRequested = false;
+  let integratePauseRequested = false;
+  let integratePauseResumeResolver = null;
   let currentIntegrateAbortController = null;
+  const integrationCheckpointKey = 'erpAsoIntegrationCheckpoint';
+  let integrationResumeScheduled = false;
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const getRmRequestTimeoutMs = () => clamp(Number(localStorage.getItem('rmRequestTimeoutMs') || '180000'), 5000, 300000);
   let monitorSummary = (() => {
     try {
       const parsed = JSON.parse(sessionStorage.getItem('monitorSummary') || '{}');
@@ -1086,6 +1165,39 @@
       return {};
     }
   })();
+
+  function buildDefaultProxyBaseUrl() {
+    if ((window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8787') {
+      return `${window.location.origin}/proxy?target=`;
+    }
+    return 'http://localhost:8787/proxy?target=';
+  }
+
+  function normalizeApiBaseUrl(value, env) {
+    const stored = String(value || '').trim();
+    try {
+      if (stored) new URL(stored);
+      return stored || getApiBaseUrlForEnv(env === 'test' ? 'test' : 'prod');
+    } catch {
+      return getApiBaseUrlForEnv(env === 'test' ? 'test' : 'prod');
+    }
+  }
+
+  function normalizeApiProxyBaseUrl(value) {
+    const stored = String(value || '').trim();
+    if (!stored) return defaultProxyBaseUrl;
+
+    try {
+      const storedUrl = new URL(stored, window.location.origin);
+      const defaultUrl = new URL(defaultProxyBaseUrl, window.location.origin);
+      if (storedUrl.pathname === defaultUrl.pathname && storedUrl.searchParams.has('target')) {
+        return defaultProxyBaseUrl;
+      }
+      return storedUrl.toString();
+    } catch {
+      return defaultProxyBaseUrl;
+    }
+  }
   let historyRuns = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem('erpAsoHistoryRuns') || '[]');
@@ -1145,9 +1257,46 @@
   }
 
   function refreshPage() {
+    if (consultStatus?.running || integrateStatus?.running) {
+      confirmRefreshWhileRunning();
+      return;
+    }
+    runRefreshPage();
+  }
+
+  function runRefreshPage() {
     const btn = document.getElementById('refreshBtn');
     if (btn) btn.classList.add('is-spinning');
     setTimeout(() => window.location.reload(), 180);
+  }
+
+  function confirmRefreshWhileRunning() {
+    openConfirmModal(
+      'Processo em execução',
+      'Existe um processo em andamento. Deseja continuar com a atualização da página?',
+      'Se atualizar agora, o sistema interrompe esta sessão do navegador e retoma automaticamente do último checkpoint salvo quando a página voltar.',
+      'Atualizar página',
+      () => runRefreshPage()
+    );
+  }
+
+  function hasActiveBlockingProcess() {
+    return Boolean(consultStatus?.running || integrateStatus?.running);
+  }
+
+  function onBeforeUnloadGuard(event) {
+    if (!hasActiveBlockingProcess()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
+  function onReloadShortcutGuard(event) {
+    if (!hasActiveBlockingProcess()) return;
+    const key = String(event.key || '').toLowerCase();
+    const wantsReload = key === 'f5' || ((event.ctrlKey || event.metaKey) && key === 'r');
+    if (!wantsReload) return;
+    event.preventDefault();
+    confirmRefreshWhileRunning();
   }
 
   function logout() {
@@ -1914,8 +2063,10 @@
       buildMappingUI();
       currentListPage = 1;
       rebuildAndRender(true);
+      updateFileInputIndicator();
       renderImportTrackingPanels();
       showToast('Planilha restaurada', 'success');
+      queueAutoResumeFromCheckpoint();
     } catch {
       return;
     }
@@ -1931,6 +2082,17 @@
     const input = document.getElementById('fileInput');
     const name = input?.files?.[0]?.name || '';
     return String(name || '');
+  }
+
+  function updateFileInputIndicator() {
+    const label = document.getElementById('fileButtonLabel');
+    const text = document.getElementById('fileButtonText');
+    if (!label || !text) return;
+    const fileName = getCurrentFileName();
+    const hasFile = Boolean(fileName);
+    label.classList.toggle('file-button--loaded', hasFile);
+    label.title = hasFile ? fileName : 'Selecionar arquivo';
+    text.textContent = hasFile ? `Arquivo: ${fileName}` : 'Selecionar arquivo';
   }
 
   function newRunId() {
@@ -2132,15 +2294,151 @@
     saveImportTrackingSnapshot(snap);
   }
 
+  function loadIntegrationCheckpoint() {
+    try {
+      const raw = localStorage.getItem(integrationCheckpointKey) || '';
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveIntegrationCheckpoint(checkpoint) {
+    try {
+      if (!checkpoint) {
+        localStorage.removeItem(integrationCheckpointKey);
+        return;
+      }
+      localStorage.setItem(integrationCheckpointKey, JSON.stringify(checkpoint));
+    } catch {}
+  }
+
+  function clearIntegrationCheckpoint() {
+    saveIntegrationCheckpoint(null);
+  }
+
+  function getPhaseRowKey(phase, row) {
+    return phase === 'exames' ? buildExamKey(row) : buildCoverKey(row);
+  }
+
+  function isIntegrationComparativoFailed(value) {
+    const comp = normalizeHeaderKey(value);
+    return comp.includes('erro integracao') || comp.includes('erro integração');
+  }
+
+  function buildIntegrationCheckpoint(phase, rows, extra = {}) {
+    const list = Array.isArray(rows) ? rows : [];
+    const pendingKeys = [];
+    const seen = new Set();
+    list.forEach(row => {
+      const key = getPhaseRowKey(phase, row);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      pendingKeys.push(key);
+    });
+
+    return {
+      active: true,
+      paused: false,
+      phase,
+      fileName: String(rawContext?.fileName || ''),
+      total: pendingKeys.length,
+      pendingKeys,
+      failedKeys: [],
+      ok: 0,
+      fail: 0,
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+      batchSize: clamp(Number(localStorage.getItem('integrationBatchSize') || '25'), 1, 200),
+      retryOnly: false,
+      ...extra
+    };
+  }
+
+  function syncIntegrateStatusWithCheckpoint(checkpoint, phaseOverride) {
+    const phase = String(phaseOverride || checkpoint?.phase || integrateStatus?.phase || '').toLowerCase();
+    const total = Math.max(0, Number(checkpoint?.total || 0));
+    const ok = Math.max(0, Number(checkpoint?.ok || 0));
+    const fail = Math.max(0, Number(checkpoint?.fail || 0));
+    const pending = Array.isArray(checkpoint?.pendingKeys) ? checkpoint.pendingKeys.length : 0;
+    integrateStatus.phase = phase;
+    integrateStatus.total = total;
+    integrateStatus.ok = ok;
+    integrateStatus.fail = fail;
+    integrateStatus.done = Math.max(0, Math.min(total, total - pending));
+    integrateStatus.startedAt = Number(checkpoint?.startedAt || Date.now());
+    integrateStatus.paused = Boolean(checkpoint?.paused);
+    integrateStatus.batchSize = clamp(Number(checkpoint?.batchSize || 25), 1, 200);
+  }
+
+  function updateIntegrationCheckpointProgress(checkpoint, { key, ok, fail, paused } = {}) {
+    const next = checkpoint && typeof checkpoint === 'object' ? checkpoint : loadIntegrationCheckpoint();
+    if (!next) return null;
+
+    if (typeof paused === 'boolean') next.paused = paused;
+    if (key) {
+      next.pendingKeys = (Array.isArray(next.pendingKeys) ? next.pendingKeys : []).filter(k => k !== key);
+      next.failedKeys = (Array.isArray(next.failedKeys) ? next.failedKeys : []).filter(k => k !== key);
+      if (ok) next.ok = Math.max(0, Number(next.ok || 0) + 1);
+      if (fail) {
+        next.fail = Math.max(0, Number(next.fail || 0) + 1);
+        next.failedKeys.push(key);
+      }
+    }
+
+    next.updatedAt = Date.now();
+    saveIntegrationCheckpoint(next);
+    syncIntegrateStatusWithCheckpoint(next);
+    return next;
+  }
+
+  function findPhaseRowByKey(phase, key) {
+    const source = phase === 'exames' ? detailRows : coverRows;
+    const list = Array.isArray(source) ? source : [];
+    return list.find(row => getPhaseRowKey(phase, row) === key) || null;
+  }
+
+  function getFailedRowsForPhase(phase) {
+    const rows = phase === 'exames' ? (Array.isArray(detailRows) ? detailRows : []) : (Array.isArray(coverRows) ? coverRows : []);
+    return rows.filter(row => isIntegrationComparativoFailed(row?.comparativo));
+  }
+
+  function toggleIntegratePausedState(paused) {
+    const nextPaused = Boolean(paused);
+    integratePauseRequested = nextPaused;
+    integrateStatus.paused = nextPaused;
+    const checkpoint = loadIntegrationCheckpoint();
+    if (checkpoint?.active) updateIntegrationCheckpointProgress(checkpoint, { paused: nextPaused });
+    if (!nextPaused && typeof integratePauseResumeResolver === 'function') {
+      const resolve = integratePauseResumeResolver;
+      integratePauseResumeResolver = null;
+      resolve();
+    }
+    updateApiProgressUi();
+  }
+
+  async function waitWhileIntegrationPaused() {
+    while (integratePauseRequested && !integrateCancelRequested) {
+      await new Promise(resolve => {
+        integratePauseResumeResolver = resolve;
+      });
+    }
+  }
+
   function clonePhaseStatus(status) {
     if (!status || typeof status !== 'object') return null;
     return {
       running: Boolean(status.running),
+      paused: Boolean(status.paused),
       done: Number(status.done || 0),
       total: Number(status.total || 0),
       ok: Number(status.ok || 0),
       fail: Number(status.fail || 0),
-      startedAt: Number(status.startedAt || 0)
+      startedAt: Number(status.startedAt || 0),
+      batchSize: clamp(Number(status.batchSize || 25), 1, 200)
     };
   }
 
@@ -2275,12 +2573,14 @@
       return;
     }
 
-    const suffix = running ? ` • ${pct}%` : (pct >= 100 ? ' • Concluído' : ` • ${pct}%`);
+    const paused = Boolean(status?.paused);
+    const suffix = paused ? ` • Pausado • ${pct}%` : running ? ` • ${pct}%` : (pct >= 100 ? ' • Concluído' : ` • ${pct}%`);
     statusEl.innerText = `${title}${suffix}`;
     bar.style.width = `${pct}%`;
-    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail}`;
+    const batchText = status?.batchSize ? ` • lote ${status.batchSize}` : '';
+    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail}${batchText}`;
 
-    if (running) {
+    if (running && !paused) {
       dot.classList.remove('hidden');
       progressEl.classList.add('progress--running');
       rateEl.innerText = rate > 0 ? `${rate.toFixed(1)}/s` : '0.0/s';
@@ -2316,6 +2616,34 @@
     renderImportPhase('impCompare', 'Comparação', snap?.comparacao);
     renderImportPhase('impCapa', 'Integração Capa', snap?.capa);
     renderImportPhase('impExames', 'Integração Exames', snap?.exames);
+    applyImportTrackingMobileFocus(wrap, snap);
+  }
+
+  function getImportTrackingMobilePhase(snap) {
+    const compare = snap?.comparacao || {};
+    const capa = snap?.capa || {};
+    const exames = snap?.exames || {};
+
+    const hasCompare = Boolean(compare.running) || Number(compare.total || 0) > 0 || Number(compare.done || 0) > 0;
+    const hasCapa = Boolean(capa.running) || Number(capa.total || 0) > 0 || Number(capa.done || 0) > 0;
+    const hasExames = Boolean(exames.running) || Number(exames.total || 0) > 0 || Number(exames.done || 0) > 0;
+
+    const comparePending = Boolean(compare.running) || (Number(compare.total || 0) > 0 && Number(compare.done || 0) < Number(compare.total || 0));
+    const capaPending = Boolean(capa.running) || (Number(capa.total || 0) > 0 && Number(capa.done || 0) < Number(capa.total || 0));
+    const examesPending = Boolean(exames.running) || (Number(exames.total || 0) > 0 && Number(exames.done || 0) < Number(exames.total || 0));
+
+    if (hasCompare && comparePending) return 'comparacao';
+    if (hasCapa && capaPending) return 'capa';
+    if (hasExames && examesPending) return 'exames';
+    if (hasExames) return 'exames';
+    if (hasCapa) return 'capa';
+    return 'comparacao';
+  }
+
+  function applyImportTrackingMobileFocus(wrap, snap) {
+    if (!wrap) return;
+    const mobilePhase = getImportTrackingMobilePhase(snap);
+    wrap.setAttribute('data-mobile-phase', mobilePhase);
   }
 
   let reportChartsInit = false;
@@ -2466,7 +2794,7 @@
     window.setTimeout(wireLegend, 0);
   }
 
-  function renderReportParecerChart(apto, inapto, indef) {
+  function renderReportParecerChart(apto, inapto, aptoRestricoes, pendente, indef) {
     const pageEl = document.getElementById('asoRelatoriosPage');
     if (pageEl && pageEl.classList.contains('hidden')) return;
 
@@ -2478,6 +2806,8 @@
     const entries = [
       { key: 'APTO', full: 'APTO', count: Number(apto || 0), color: '#34d399' },
       { key: 'INAPTO', full: 'INAPTO', count: Number(inapto || 0), color: '#f87171' },
+      { key: 'APTO COM RESTRICOES', full: 'APTO COM RESTRICOES', count: Number(aptoRestricoes || 0), color: '#f59e0b' },
+      { key: 'PENDENTE', full: 'PENDENTE', count: Number(pendente || 0), color: '#60a5fa' },
       { key: 'INDEFINIDO', full: 'INDEFINIDO', count: Number(indef || 0), color: '#6b7280' }
     ].filter(e => e.count > 0);
 
@@ -2664,6 +2994,7 @@
     { key: 'dataResExame', label: 'Data Res. Exame', patterns: [/data.*res/] },
     { key: 'nomeExaminador', label: 'Nome Examinador', patterns: [/nome.*examinador/] },
     { key: 'parecerAso', label: 'Parecer (ASO)', patterns: [/parecer/, /aso/] },
+    { key: 'idConsulta', label: 'IdASO / IDCONSULTA', patterns: [/id\s*aso/, /\bidaso\b/, /id\s*consulta/, /\bidconsulta\b/, /id\s*consult/] },
     { key: 'empresa', label: 'Empresa', patterns: [/nome.*empresa/, /^empresa$/] },
     { key: 'unidade', label: 'Unidade', patterns: [/unidade/] },
     { key: 'setor', label: 'Setor', patterns: [/setor/] },
@@ -2681,11 +3012,13 @@
       { key: 'nomeExaminador', label: 'Nome Examinador' },
       { key: 'parecerAso', label: 'Parecer (ASO)' },
       { key: 'qtdeExames', label: 'Qtde Exames' },
-      { key: 'comparativo', label: 'Comparativo' },
-      { key: '__actions', label: 'Ações' }
+      { key: 'idConsulta', label: 'IdASO' },
+      { key: 'comparativo', label: 'Comparativo' }
     ],
     exames: [
       { key: 'nomeFuncionario', label: 'Nome Funcionário' },
+      { key: 'cpf', label: 'CPF' },
+      { key: 'matricula', label: 'Matrícula' },
       { key: 'tipoExame', label: 'Tipo de exame' },
       { key: 'refSeq', label: 'Ref./Seq.' },
       { key: 'nomeExame', label: 'Nome do Exame' },
@@ -2695,8 +3028,8 @@
       { key: 'nomeExaminador', label: 'Nome Examinador' },
       { key: 'situacao', label: 'Situação' },
       { key: 'matriculaApi', label: 'Matrícula (API)' },
-      { key: 'comparativo', label: 'Comparativo' },
-      { key: '__actions', label: 'Ações' }
+      { key: 'idConsulta', label: 'IdASO' },
+      { key: 'comparativo', label: 'Comparativo' }
     ]
   };
 
@@ -2841,7 +3174,7 @@
   function mapRow(row, mapping) {
     const obj = {};
     obj.nomeFuncionario = normalizeCell(getMappedValue(row, mapping.nomeFuncionario));
-    obj.cpf = normalizeCell(getMappedValue(row, mapping.cpf));
+    obj.cpf = cpfDigits(getMappedValue(row, mapping.cpf));
     obj.matricula = normalizeCell(getMappedValue(row, mapping.matricula));
     obj.tipoExame = normalizeCell(getMappedValue(row, mapping.tipoExame));
     obj.refSeq = normalizeCell(getMappedValue(row, mapping.refSeq));
@@ -2859,11 +3192,16 @@
     obj.matriculaApi = '';
     obj.comparativo = '';
     obj.blocked = false;
-    obj.idConsulta = '';
+    const mappedIdRaw = normalizeCell(getMappedValue(row, mapping.idConsulta));
+    obj.idConsulta = formatIdConsulta(mappedIdRaw);
 
     const coverKey = buildCoverKey(obj);
-    const savedId = idConsultaByKey?.[coverKey];
-    if (savedId) obj.idConsulta = String(savedId);
+    if (obj.idConsulta) {
+      idConsultaByKey[coverKey] = String(obj.idConsulta);
+    } else {
+      const savedId = idConsultaByKey?.[coverKey];
+      if (savedId) obj.idConsulta = formatIdConsulta(savedId);
+    }
 
     const compCover = integrationComparativoByKey?.[coverKey];
     if (compCover && isCoverRow(obj)) {
@@ -2877,7 +3215,21 @@
   }
 
   function cpfDigits(value) {
-    return String(value || '').replace(/\D/g, '');
+    return formatCpfDigits(value);
+  }
+
+  function formatCpfDigits(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length > 11) return digits.slice(-11);
+    return digits.length < 11 ? digits.padStart(11, '0') : digits;
+  }
+
+  function formatIdConsulta(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    const padLen = 6;
+    return digits.length < padLen ? digits.padStart(padLen, '0') : digits;
   }
 
   function formatCpf(value) {
@@ -2921,9 +3273,25 @@
   function classifyParecerAso(value) {
     const key = normalizeHeaderKey(value);
     if (!key) return 'INDEFINIDO';
+    if (key.includes('pendente')) return 'PENDENTE';
+    if ((key.includes('apto') || key.includes('apta')) && key.includes('restric')) return 'APTO COM RESTRICOES';
     if (key.includes('inapto')) return 'INAPTO';
-    if (key.includes('apto')) return 'APTO';
+    if (key.includes('nao apto') || key.includes('não apto')) return 'INAPTO';
+    if (key.includes('apto') || key.includes('apta')) return 'APTO';
     return 'INDEFINIDO';
+  }
+
+  function getAptoValueFromParecer(status) {
+    const s = String(status || '').trim().toUpperCase();
+    if (s === 'APTO') return 1;
+    if (s === 'INAPTO') return 2;
+    if (s === 'APTO COM RESTRICOES') return 3;
+    if (s === 'PENDENTE') return 4;
+    return null;
+  }
+
+  function isSupportedParecerAso(status) {
+    return getAptoValueFromParecer(status) !== null;
   }
 
   let reportFilterState = { source: 'all', parecer: 'all', pendingOnly: false, q: '' };
@@ -3252,6 +3620,8 @@
 
     let apto = 0;
     let inapto = 0;
+    let aptoRestricoes = 0;
+    let pendenteParecer = 0;
     let indef = 0;
     let capaOk = 0;
     let capaFail = 0;
@@ -3261,6 +3631,8 @@
       const status = classifyParecerAso(r?.parecerAso);
       if (status === 'APTO') apto += 1;
       else if (status === 'INAPTO') inapto += 1;
+      else if (status === 'APTO COM RESTRICOES') aptoRestricoes += 1;
+      else if (status === 'PENDENTE') pendenteParecer += 1;
       else indef += 1;
 
       const st = getReportIntegrationState('capa', r);
@@ -3320,6 +3692,8 @@
       { label: 'Exames', value: totalExamesF, variant: '' },
       { label: 'Apto', value: apto, variant: 'ok' },
       { label: 'Inapto', value: inapto, variant: 'fail' },
+      { label: 'Apto c/ restricoes', value: aptoRestricoes, variant: '' },
+      { label: 'Pendente', value: pendenteParecer, variant: 'pend' },
       { label: 'Indefinido', value: indef, variant: 'pend' },
       { label: 'Capa integrada', value: capaOk, variant: 'ok' },
       { label: 'Exame integrado', value: exOk, variant: 'ok' },
@@ -3346,7 +3720,7 @@
       todayListEl.appendChild(row);
     });
 
-    renderReportParecerChart(apto, inapto, indef);
+    renderReportParecerChart(apto, inapto, aptoRestricoes, pendenteParecer, indef);
 
     topErrorsList.innerHTML = '';
     const errSource = Array.isArray(monitorErrors) ? monitorErrors : [];
@@ -3428,7 +3802,7 @@
   }
 
   function buildEsocialUrl() {
-    const base = String(apiBaseUrl || defaultApiBaseUrl || '').trim();
+    const base = String(getActiveApiBaseUrl() || '').trim();
     if (!base) return '';
     const api11 = base.replace(/API\.0006/gi, 'API.0011');
     const withoutQuery = api11.split('?')[0];
@@ -4548,6 +4922,7 @@
 
     const compKey = normalizeHeaderKey(obj.comparativo);
     const keepComparativo = compKey.includes('integr');
+    obj.blocked = false;
 
     const err = employeeCacheErrors[cpf];
     if (err) {
@@ -4569,9 +4944,12 @@
 
     const tipo = normalizeTipoExame(obj.tipoExame);
     if (tipo.includes('periodico') && obj.situacao === 'D') {
-      obj.blocked = true;
-      if (!keepComparativo) obj.comparativo = 'Ignorado (Periódico + D)';
-      return;
+      const parecer = classifyParecerAso(obj.parecerAso);
+      if (parecer !== 'INAPTO') {
+        obj.blocked = true;
+        if (!keepComparativo) obj.comparativo = 'Ignorado (Periódico + D)';
+        return;
+      }
     }
 
     const hasMismatch = obj.matriculaApi && obj.matricula && normalizeCell(obj.matriculaApi) !== normalizeCell(obj.matricula);
@@ -4591,7 +4969,11 @@
   function loadApiBaseUrlToUI() {
     const input = document.getElementById('apiBaseUrlInput');
     if (!input) return;
-    input.value = apiBaseUrl || '';
+    input.value = getActiveApiBaseUrl() || '';
+    const envToggle = document.getElementById('apiEnvToggle');
+    const envLabel = document.getElementById('apiEnvLabel');
+    if (envToggle) envToggle.checked = apiEnv === 'test';
+    if (envLabel) envLabel.textContent = apiEnv === 'test' ? 'Teste' : 'Produção';
   }
 
   function loadApiProxyBaseUrlToUI() {
@@ -4603,25 +4985,41 @@
   function saveApiBaseUrl() {
     const input = document.getElementById('apiBaseUrlInput');
     if (!input) return;
-    apiBaseUrl = String(input.value || '').trim();
-    if (apiBaseUrl) {
-      localStorage.setItem('apiBaseUrl', apiBaseUrl);
-    } else {
-      apiBaseUrl = defaultApiBaseUrl;
-      localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    const next = String(input.value || '').trim();
+    apiBaseUrl = normalizeApiBaseUrl(next, apiEnv);
+    localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    if (apiEnv === 'test') localStorage.setItem('apiBaseUrlTest', apiBaseUrl);
+    else localStorage.setItem('apiBaseUrlProd', apiBaseUrl);
+    sessionStorage.removeItem('rmAccessToken');
+    sessionStorage.removeItem('rmAccessTokenExpiresAt');
+    renderSessionEnvInfo();
+  }
+
+  function onApiEnvToggleChange() {
+    if (consultStatus?.running || integrateStatus?.running) {
+      showToast('Finalize ou cancele o processo antes de trocar o ambiente', 'error');
+      loadApiBaseUrlToUI();
+      return;
     }
+    const toggle = document.getElementById('apiEnvToggle');
+    apiEnv = toggle?.checked ? 'test' : 'prod';
+    localStorage.setItem('apiEnv', apiEnv);
+    apiBaseUrl = normalizeApiBaseUrl(getApiBaseUrlForEnv(apiEnv), apiEnv);
+    localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    sessionStorage.removeItem('rmAccessToken');
+    sessionStorage.removeItem('rmAccessTokenExpiresAt');
+    loadApiBaseUrlToUI();
+    rebuildAndRender(false);
+    renderSessionEnvInfo();
+    showToast(`Ambiente alterado para ${apiEnv === 'test' ? 'Teste' : 'Produção'}`, 'success');
   }
 
   function saveApiProxyBaseUrl() {
     const input = document.getElementById('apiProxyBaseUrlInput');
     if (!input) return;
-    apiProxyBaseUrl = String(input.value || '').trim();
-    if (apiProxyBaseUrl) {
-      localStorage.setItem('apiProxyBaseUrl', apiProxyBaseUrl);
-    } else {
-      apiProxyBaseUrl = 'http://localhost:8787/proxy?target=';
-      localStorage.setItem('apiProxyBaseUrl', apiProxyBaseUrl);
-    }
+    apiProxyBaseUrl = normalizeApiProxyBaseUrl(input.value);
+    localStorage.setItem('apiProxyBaseUrl', apiProxyBaseUrl);
+    input.value = apiProxyBaseUrl;
   }
 
   function buildProxyUrl(targetUrl) {
@@ -4684,6 +5082,11 @@
       return;
     }
 
+    if (importMode !== 'capa') {
+      showToast('A comparação agora é feita na Capa do ASO (IdASO + Data). Mude para Capa do ASO.', 'error');
+      return;
+    }
+
     saveApiBaseUrl();
 
     saveApiProxyBaseUrl();
@@ -4694,112 +5097,31 @@
       return;
     }
 
-    let cpfs = [];
-    const cpfIdx = rawContext?.mapping?.cpf;
-    if (typeof cpfIdx === 'number' && cpfIdx >= 0) {
-      cpfs = Array.from(new Set(rawContext.rawRows.map(r => cpfDigits(r?.[cpfIdx])).filter(cpf => cpf.length === 11)));
-    } else {
-      const baseForQuery = allRows.length ? allRows : (importMode === 'capa' ? coverRows : detailRows);
-      cpfs = Array.from(new Set(baseForQuery.map(r => cpfDigits(r.cpf)).filter(cpf => cpf.length === 11)));
-    }
-    if (cpfs.length === 0) {
-      showToast('Não encontrei CPF para consultar na API', 'error');
+    const compareRows = Array.isArray(dados) ? dados.filter(Boolean) : [];
+    const coverKeysForScope = Array.from(new Set(compareRows.map(r => buildCoverKey(r)).filter(Boolean)));
+    if (!coverKeysForScope.length) {
+      showToast('Não encontrei registros para comparar no filtro atual da lista', 'error');
       return;
     }
 
-    employeeCache = {};
-    employeeCacheErrors = {};
+    const cpfs = Array.from(new Set(compareRows.map(r => cpfDigits(r?.cpf)).filter(cpf => cpf.length === 11)));
+    cpfs.forEach(cpf => {
+      delete employeeCache[cpf];
+      delete employeeCacheErrors[cpf];
+    });
+
     consultCancelRequested = false;
     currentConsultAbortController = null;
-    consultStatus = { running: true, done: 0, total: cpfs.length, ok: 0, fail: 0, startedAt: Date.now() };
-    startHistoryRun('comparacao', cpfs.length);
+    consultStatus = { running: true, done: 0, total: cpfs.length + coverKeysForScope.length, ok: 0, fail: 0, startedAt: Date.now(), label: 'Comparação (CPF/API + IdASO/Data)' };
+    startHistoryRun('comparacao', cpfs.length + coverKeysForScope.length);
     let okCount = 0;
     let failCount = 0;
     rebuildAndRender(false);
     updateApiProgressUi();
     startApiProgressTimer();
-    showToast(`Consultando API (${cpfs.length} CPF(s))`, 'success');
-
-    async function fetchWithFallback(targetUrl) {
-      let res;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
-      try {
-        currentConsultAbortController = controller;
-        if (consultCancelRequested) controller.abort();
-        apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: targetUrl, usedProxy: false, status: '', message: '' };
-        res = await fetch(targetUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders }, signal: controller.signal });
-        clearTimeout(timeoutId);
-        currentConsultAbortController = null;
-        return res;
-      } catch (e) {
-        clearTimeout(timeoutId);
-        currentConsultAbortController = null;
-        const msg = String(e?.message || '').toLowerCase();
-        if (!msg.includes('failed to fetch')) throw e;
-        const proxyUrl = buildProxyUrl(targetUrl);
-        if (!proxyUrl) throw e;
-        apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: proxyUrl, usedProxy: true, status: '', message: '' };
-        return fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
-      }
-    }
-
-    async function fetchRecordsForCpf(cpf) {
-      const urlDigits = buildApiUrl(cpf);
-      if (!urlDigits) throw new Error('URL inválida');
-      apiDebug.lastCpf = cpf;
-
-      const res1 = await fetchWithFallback(urlDigits);
-      if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
-      const ct1 = res1.headers.get('content-type') || '';
-      const payload1 = ct1.includes('application/json') ? await res1.json() : await res1.text();
-      const recs1 = normalizeApiRecords(payload1);
-      const recs1Match = recs1.some(r => cpfDigits(r.cpf) === cpf);
-
-      if (recs1Match) return recs1.filter(r => cpfDigits(r.cpf) === cpf);
-
-      const formatted = formatCpf(cpf);
-      if (formatted) {
-        const urlFormatted = buildApiUrl(formatted);
-        if (urlFormatted && urlFormatted !== urlDigits) {
-          const res2 = await fetchWithFallback(urlFormatted);
-          if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
-          const ct2 = res2.headers.get('content-type') || '';
-          const payload2 = ct2.includes('application/json') ? await res2.json() : await res2.text();
-          const recs2 = normalizeApiRecords(payload2);
-          const recs2Match = recs2.some(r => cpfDigits(r.cpf) === cpf);
-          if (recs2Match) return recs2.filter(r => cpfDigits(r.cpf) === cpf);
-          if (recs2.length && recs2.every(r => cpfDigits(r.cpf) && cpfDigits(r.cpf) !== cpf)) {
-            throw new Error('API não filtrou por CPF');
-          }
-          return recs2;
-        }
-      }
-
-      if (recs1.length && recs1.every(r => cpfDigits(r.cpf) && cpfDigits(r.cpf) !== cpf)) {
-        throw new Error('API não filtrou por CPF');
-      }
-
-      return recs1;
-    }
-
     const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-    const concurrency = clamp(Number(localStorage.getItem('compareConcurrency') || '3'), 1, 10);
-    const applyEveryMs = clamp(Number(localStorage.getItem('compareApplyEveryMs') || '0'), 0, 30000);
-    let applyTimerId = null;
+    const concurrency = clamp(Number(localStorage.getItem('compareVerifyConcurrency') || '2'), 1, 10);
     let lastProgressUiAt = 0;
-
-    const runPool = async (items, worker, limit) => {
-      const queue = items.slice();
-      const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
-        while (queue.length) {
-          if (consultCancelRequested) return;
-          const cpf = queue.shift();
-          await worker(cpf);
-        }
-      });
-      await Promise.all(runners);
-    };
 
     const updateProgressThrottled = () => {
       const now = Date.now();
@@ -4815,54 +5137,266 @@
       updateApiProgressUi();
     };
 
-    if (applyEveryMs > 0) {
-      applyTimerId = setInterval(() => {
-        if (!consultStatus?.running || consultCancelRequested) return;
-        applyAndRender();
-      }, applyEveryMs);
-    }
+    try {
+      const controller = new AbortController();
+      currentConsultAbortController = controller;
 
-    await runPool(
-      cpfs,
-      async (cpf) => {
-        if (consultCancelRequested) return;
+      await ensureIdConsultaForEmptyCovers(compareRows, controller.signal);
+      applyAndRender();
+
+      const apiConcurrency = clamp(Number(localStorage.getItem('compareConcurrency') || '1'), 1, 10);
+      const applyEveryMs = clamp(Number(localStorage.getItem('compareApplyEveryMs') || '1500'), 250, 30000);
+      const requestTimeoutMs = getRmRequestTimeoutMs();
+      let applyTimerId = null;
+
+      const fetchWithFallback = async (targetUrl) => {
+        const runOnce = async (timeoutMs) => {
+          const reqController = new AbortController();
+          const timeoutId = setTimeout(() => reqController.abort(), timeoutMs);
+          try {
+            currentConsultAbortController = reqController;
+            if (consultCancelRequested) reqController.abort();
+            apiDebug = { lastCpf: apiDebug.lastCpf, lastUrl: targetUrl, usedProxy: Boolean(shouldUseProxyFirst()), status: '', message: '' };
+            return await fetchWithProxyFallback(targetUrl, { method: 'GET', headers: { Accept: 'application/json', ...authHeaders }, signal: reqController.signal });
+          } finally {
+            clearTimeout(timeoutId);
+            currentConsultAbortController = null;
+          }
+        };
+
         try {
-          const recs = await fetchRecordsForCpf(cpf);
-          employeeCache[cpf] = recs;
+          return await runOnce(requestTimeoutMs);
+        } catch (e) {
+          const msg = String(e?.message || '').toLowerCase();
+          const aborted = msg.includes('aborted') || msg.includes('aborterror');
+          if (!aborted || consultCancelRequested) throw e;
+          await waitBeforeRetry(400);
+        }
+
+        try {
+          return await runOnce(clamp(Math.round(requestTimeoutMs * 1.5), 5000, 300000));
+        } catch (e) {
+          const msg = String(e?.message || '').toLowerCase();
+          const aborted = msg.includes('aborted') || msg.includes('aborterror');
+          if (!aborted || consultCancelRequested) throw e;
+          await waitBeforeRetry(900);
+        }
+
+        return await runOnce(clamp(requestTimeoutMs * 2, 5000, 300000));
+      };
+
+      const fetchRecordsForCpf = async (cpf) => {
+        const urlDigits = buildApiUrl(cpf);
+        if (!urlDigits) throw new Error('URL inválida');
+        apiDebug.lastCpf = cpf;
+
+        const res1 = await fetchWithFallback(urlDigits);
+        if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
+        const ct1 = res1.headers.get('content-type') || '';
+        const payload1 = ct1.includes('application/json') ? await res1.json() : await res1.text();
+        const recs1 = normalizeApiRecords(payload1);
+        const recs1Match = recs1.some(r => cpfDigits(r.cpf) === cpf);
+        if (recs1Match) return recs1.filter(r => cpfDigits(r.cpf) === cpf);
+
+        const formatted = formatCpf(cpf);
+        if (formatted) {
+          const urlFormatted = buildApiUrl(formatted);
+          if (urlFormatted && urlFormatted !== urlDigits) {
+            const res2 = await fetchWithFallback(urlFormatted);
+            if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+            const ct2 = res2.headers.get('content-type') || '';
+            const payload2 = ct2.includes('application/json') ? await res2.json() : await res2.text();
+            const recs2 = normalizeApiRecords(payload2);
+            const recs2Match = recs2.some(r => cpfDigits(r.cpf) === cpf);
+            if (recs2Match) return recs2.filter(r => cpfDigits(r.cpf) === cpf);
+            return recs2;
+          }
+        }
+
+        return recs1;
+      };
+
+      const runPool = async (items, worker, limit) => {
+        const queue = items.slice();
+        const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+          while (queue.length) {
+            if (consultCancelRequested) return;
+            const item = queue.shift();
+            await worker(item);
+          }
+        });
+        await Promise.all(runners);
+      };
+
+      if (applyEveryMs > 0) {
+        applyTimerId = setInterval(() => {
+          if (!consultStatus?.running || consultCancelRequested) return;
+          applyAndRender();
+        }, applyEveryMs);
+      }
+
+      if (cpfs.length) {
+        showToast(`Consultando API (${cpfs.length} CPF(s))`, 'success');
+        await runPool(
+          cpfs,
+          async (cpf) => {
+            if (consultCancelRequested) return;
+            try {
+              const recs = await fetchRecordsForCpf(cpf);
+              employeeCache[cpf] = recs;
+              consultStatus.ok += 1;
+            } catch (e) {
+              employeeCache[cpf] = [];
+              const msg = String(e?.message || '');
+              if (msg.toLowerCase().includes('failed to fetch')) employeeCacheErrors[cpf] = 'Erro API (CORS/rede) — use Proxy local';
+              else if (msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('aborterror')) employeeCacheErrors[cpf] = consultCancelRequested ? 'Cancelado' : `Erro API (timeout ${Math.round(getRmRequestTimeoutMs() / 1000)}s)`;
+              else if (msg.startsWith('HTTP ')) employeeCacheErrors[cpf] = `Erro API (${msg})`;
+              else employeeCacheErrors[cpf] = msg ? `Erro API (${msg})` : 'Erro API';
+              consultStatus.fail += 1;
+            } finally {
+              consultStatus.done += 1;
+              updateProgressThrottled();
+            }
+          },
+          apiConcurrency
+        );
+      }
+
+      if (applyTimerId) {
+        clearInterval(applyTimerId);
+        applyTimerId = null;
+      }
+      applyAndRender();
+
+      const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
+      const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: controller.signal });
+      const funcionarios = normalizeConsultaRows(funcionariosPayload);
+      const codPessoaByCpf = new Map();
+      funcionarios.forEach(r => {
+        const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
+        const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
+        if (cpf && Number.isFinite(codPessoa)) codPessoaByCpf.set(cpf, codPessoa);
+      });
+
+      const coverByKey = new Map((Array.isArray(coverRows) ? coverRows : []).map(c => [buildCoverKey(c), c]));
+      showToast(`Comparando no RM (IdASO + Data) • ${coverKeysForScope.length} registro(s)`, 'success');
+
+      const runPoolKeys = async (items, worker, limit) => {
+        const queue = items.slice();
+        const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+          while (queue.length) {
+            if (consultCancelRequested) return;
+            const key = queue.shift();
+            await worker(key);
+          }
+        });
+        await Promise.all(runners);
+      };
+
+      await runPoolKeys(
+        coverKeysForScope,
+        async (coverKey) => {
+          if (consultCancelRequested) return;
+          const cover = coverByKey.get(coverKey);
+          if (!cover) {
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          const planDate = normalizeRmDateForCompare(getCoverReferenceDateForRm(cover));
+          const planId = formatIdConsulta(idConsultaByKey?.[coverKey] || cover.idConsulta || '');
+          if (!planId) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, 'Planilha: sem IdASO');
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+          if (!planDate) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, 'Planilha: data inválida');
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          const cpf = cpfDigits(cover.cpf);
+          const codPessoa = codPessoaByCpf.get(cpf) || 0;
+          if (!codPessoa) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, 'RM: sem CODPESSOA');
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          const res = await fetchRmCapaById(codPessoa, planId, controller.signal);
+          if (res.error) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, `RM: erro verificação (${compactHttpErrorMessage(res.error)})`);
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          if (!res.found) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, 'RM: IdASO não encontrado');
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          const r = res.record || {};
+          const rmDate = normalizeRmDateForCompare(
+            pickValue(r, [/^dataconsulta$/, /data consulta/]) ?? r.DATACONSULTA ?? pickValue(r, [/^dataaso$/, /data aso/]) ?? r.DATAASO ?? ''
+          );
+          if (rmDate && rmDate !== planDate) {
+            cover.comparativo = appendComparativoStatus(cover.comparativo, `RM: IdASO existe (data diferente)`);
+            integrationComparativoByKey[coverKey] = cover.comparativo;
+            persistIntegrationComparativoByKey();
+            failCount += 1;
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            updateProgressThrottled();
+            return;
+          }
+
+          updateIdConsultaForCoverKey(coverKey, planId);
+          persistIdConsultaByKey();
+          cover.comparativo = appendComparativoStatus(cover.comparativo, 'RM: consulta já existe');
+          integrationComparativoByKey[coverKey] = cover.comparativo;
+          persistIntegrationComparativoByKey();
           okCount += 1;
           consultStatus.ok += 1;
-        } catch (e) {
-          employeeCache[cpf] = [];
-          const msg = String(e?.message || '');
-          if (msg.toLowerCase().includes('failed to fetch')) {
-            employeeCacheErrors[cpf] = 'Erro API (CORS/rede) — use Proxy local';
-          } else if (msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('aborterror')) {
-            employeeCacheErrors[cpf] = consultCancelRequested ? 'Cancelado' : 'Erro API (timeout)';
-          } else if (msg.startsWith('HTTP ')) {
-            employeeCacheErrors[cpf] = `Erro API (${msg})`;
-          } else if (msg.toLowerCase().includes('nao filtrou por cpf')) {
-            employeeCacheErrors[cpf] = 'Erro API (sem filtro CPF)';
-          } else if (msg) {
-            employeeCacheErrors[cpf] = `Erro API (${msg})`;
-          } else {
-            employeeCacheErrors[cpf] = 'Erro API';
-          }
-          pushMonitorError('comparacao', cpf, employeeCacheErrors[cpf]);
-          failCount += 1;
-          consultStatus.fail += 1;
-        } finally {
           consultStatus.done += 1;
           updateProgressThrottled();
-        }
-      },
-      concurrency
-    );
-
-    if (applyTimerId) {
-      clearInterval(applyTimerId);
-      applyTimerId = null;
+        },
+        concurrency
+      );
+    } catch (e) {
+      showToast(`Comparação no RM falhou: ${String(e?.message || '')}`, 'error');
+    } finally {
+      currentConsultAbortController = null;
+      applyAndRender();
     }
-    applyAndRender();
 
     rebuildAndRender(true);
     consultStatus.running = false;
@@ -4875,18 +5409,16 @@
       return;
     }
 
-    monitorSummary.comparacao = { total: cpfs.length, ok: okCount, fail: failCount };
+    monitorSummary.comparacao = { total: coverKeysForScope.length, ok: okCount, fail: failCount };
     persistMonitor();
     renderMonitorPanel();
     finishHistoryRun(okCount, failCount);
 
     if (failCount) {
-      const firstError = Object.values(employeeCacheErrors)[0] || '';
-      const more = firstError ? ` • ${firstError}` : '';
-      showToast(`Comparativo atualizado • ${okCount} ok • ${failCount} falha(s)${more}`, 'error');
+      showToast(`Comparação concluída • ${okCount} encontrado(s) • ${failCount} pendente(s)`, 'error');
       return;
     }
-    showToast(`Comparativo atualizado • ${okCount} ok`, 'success');
+    showToast(`Comparação concluída • ${okCount} encontrado(s)`, 'success');
   }
 
   function cancelarConsultaApi() {
@@ -4900,7 +5432,12 @@
   function cancelarIntegracao() {
     if (!integrateStatus?.running) return;
     integrateCancelRequested = true;
+    toggleIntegratePausedState(false);
     currentIntegrateAbortController?.abort?.();
+    clearIntegrationCheckpoint();
+    integrateStatus.running = false;
+    currentIntegrateAbortController = null;
+    integrateCancelRequested = false;
     updateApiProgressUi();
     stopApiProgressTimer();
   }
@@ -4915,10 +5452,453 @@
     }
   }
 
+  function togglePauseProcessoAtual() {
+    if (!integrateStatus?.running) return;
+    toggleIntegratePausedState(!integratePauseRequested);
+  }
+
+  function reprocessarFalhasIntegracao(phase) {
+    if (consultStatus?.running || integrateStatus?.running) {
+      showToast('Aguarde o processo atual finalizar ou pause/cancele antes de reprocessar', 'error');
+      return;
+    }
+
+    const failedRows = getFailedRowsForPhase(phase);
+    if (!failedRows.length) {
+      showToast('Não há falhas pendentes para reprocessar nesta etapa', 'success');
+      return;
+    }
+
+    if (phase === 'capa') {
+      integrarCapaReal(failedRows, { retryFailed: true }).catch(e => {
+        finalizeIntegracaoWithError(e?.message || 'Falha na integração');
+        showToast(String(e?.message || 'Falha na integração'), 'error');
+      });
+      return;
+    }
+
+    integrarExamesReal(failedRows, { retryFailed: true }).catch(e => {
+      finalizeIntegracaoWithError(e?.message || 'Falha na integração');
+      showToast(String(e?.message || 'Falha na integração'), 'error');
+    });
+  }
+
+  function appendComparativoStatus(currentText, suffix) {
+    const base = String(currentText || '').trim();
+    const add = String(suffix || '').trim();
+    if (!add) return base;
+    if (!base) return add;
+    const baseKey = normalizeHeaderKey(base);
+    const addKey = normalizeHeaderKey(add);
+    if (addKey && baseKey.includes(addKey)) return base;
+    return `${base} • ${add}`;
+  }
+
+  function compactHttpErrorMessage(message) {
+    const s = String(message || '');
+    const http = s.match(/HTTP\s+\d{3}/i);
+    const trimmed = s.replace(/\s+/g, ' ').trim();
+    const body = trimmed.replace(/^HTTP\s+\d{3}\s*:?\s*/i, '').trim();
+    const parsed = safeJsonParseIfString(body);
+    let detail = '';
+    if (parsed && typeof parsed === 'object') {
+      detail = String(
+        parsed?.message ||
+        parsed?.Message ||
+        parsed?.error_description ||
+        parsed?.error ||
+        parsed?.ExceptionMessage ||
+        parsed?.exceptionMessage ||
+        parsed?.detail ||
+        parsed?.Detail ||
+        ''
+      ).trim();
+    } else {
+      detail = body;
+    }
+    const summary = http
+      ? `${http[0].toUpperCase()}${detail ? `: ${detail}` : ''}`
+      : trimmed;
+    return summary.length > 220 ? summary.slice(0, 220) : summary;
+  }
+
+  function setIntegrationComparativo(phase, row, key, value) {
+    row.comparativo = String(value || '');
+    integrationComparativoByKey[key] = row.comparativo;
+    persistIntegrationComparativoByKey();
+    if (normalizeHeaderKey(row.comparativo).includes('erro verificacao')) {
+      pushMonitorError(phase, key, row.comparativo);
+    }
+  }
+
+  async function tryGetRmRecord(urlBase, idCandidates, headers, signal) {
+    const base = String(urlBase || '').trim();
+    const candidates = Array.isArray(idCandidates) ? idCandidates : [];
+    for (const id of candidates) {
+      if (!id) continue;
+      const normalizedId = (() => {
+        const s = String(id);
+        if (base.includes('/SmtConsultasProntData') && (s.match(/;/g) || []).length >= 2) {
+          const parts = s.split(';').map(p => p.trim()).filter(Boolean);
+          const last = parts[parts.length - 1] || '';
+          const digits = last.replace(/\D/g, '');
+          if (digits) return `1;${digits}`;
+        }
+        return s;
+      })();
+      const url = `${base}/${encodeURIComponent(normalizedId)}`;
+      try {
+        await fetchRmNoParse(url, { method: 'GET', headers, signal });
+        return { found: true, error: '' };
+      } catch (e) {
+        const msg = String(e?.message || '');
+        if (msg.startsWith('HTTP 404') || msg.startsWith('HTTP 400')) continue;
+        return { found: false, error: msg || 'Erro verificação' };
+      }
+    }
+    return { found: false, error: '' };
+  }
+
+  function getIdConsultaFromRmRecord(record) {
+    return formatIdConsulta(
+      pickValue(record, [/^idconsulta$/, /id\s*consulta/]) ??
+      record?.IDCONSULTA ??
+      record?.idconsulta ??
+      ''
+    );
+  }
+
+  async function findRmCapaByIdFallback(codPessoa, idConsulta, signal) {
+    const cod = Number(codPessoa || 0);
+    const id = formatIdConsulta(idConsulta);
+    if (!id) return { found: false, error: '', record: null };
+
+    const numericId = String(Number(id));
+    const base = buildInsertCapaUrl();
+    const filters = [
+      `IDCONSULTA eq ${numericId}`,
+      Number.isFinite(cod) && cod > 0 ? `CODPESSOA eq ${cod} and IDCONSULTA eq ${numericId}` : '',
+      Number.isFinite(cod) && cod > 0 ? `CODPESSOA eq ${cod}` : ''
+    ].filter(Boolean);
+
+    let lastError = '';
+    for (const filter of filters) {
+      const url = new URL(base);
+      url.searchParams.set('$top', filter === `CODPESSOA eq ${cod}` ? '200' : '50');
+      url.searchParams.set('$filter', filter);
+      try {
+        const payload = await fetchRmJson(url.toString(), { method: 'GET', signal });
+        const rows = normalizeConsultaRows(payload);
+        if (!rows.length) continue;
+
+        const record = rows.find(r => getIdConsultaFromRmRecord(r) === id) || null;
+        if (record) return { found: true, error: '', record };
+      } catch (e) {
+        const msg = String(e?.message || '');
+        if (msg.startsWith('HTTP 400') || msg.startsWith('HTTP 404') || msg.startsWith('HTTP 405')) continue;
+        lastError = msg || lastError;
+      }
+    }
+
+    return { found: false, error: lastError, record: null };
+  }
+
+  async function fetchRmCapaById(codPessoa, idConsulta, signal) {
+    const cod = Number(codPessoa || 0);
+    const id = formatIdConsulta(idConsulta);
+    if (!Number.isFinite(cod) || cod <= 0 || !id) return { found: false, error: '', record: null };
+    const base = buildInsertCapaUrl();
+    const key = `1;${id}`;
+    const url = `${base}/${encodeURIComponent(key)}`;
+    try {
+      const payload = await fetchRmJson(url, {
+        method: 'GET',
+        headers: { CODCOLIGADA: '1', CODPESSOA: String(cod) },
+        signal
+      });
+      const record = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : null;
+      return { found: true, error: '', record };
+    } catch (e) {
+      const msg = String(e?.message || '');
+      if (msg.startsWith('HTTP 404') || msg.startsWith('HTTP 400')) return { found: false, error: '', record: null };
+      const fallback = await findRmCapaByIdFallback(cod, id, signal);
+      if (fallback.found) return fallback;
+      if (!fallback.error) return { found: false, error: '', record: null };
+      return { found: false, error: fallback.error || msg || 'Erro verificação', record: null };
+    }
+  }
+
+  function tryParsePtBrDateToIso(value) {
+    const s = String(value || '').trim();
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return '';
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
+  function normalizeRmDateForCompare(value) {
+    const s = String(value || '').trim();
+    if (!s) return '';
+    const pt = tryParsePtBrDateToIso(s);
+    if (pt) return pt;
+    const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    return '';
+  }
+
+  async function findExistingCapaIdConsultaOnRm(codPessoa, datePtBr, tipoExame, signal) {
+    const cod = Number(codPessoa || 0);
+    if (!Number.isFinite(cod) || cod <= 0) return '';
+
+    const date = String(datePtBr || '').trim();
+    if (!date) return '';
+    const iso = tryParsePtBrDateToIso(date);
+    const dateCandidates = [normalizeRmDateForCompare(date), normalizeRmDateForCompare(iso)].filter(Boolean);
+    const dateCandidateSet = new Set(dateCandidates);
+
+    const origin = new URL(getActiveApiBaseUrl()).origin;
+    const base = `${origin}/RMSRestDataServer/rest/SmtConsultasProntData`;
+
+    const tipoEsocial = guessCodTipoConsultaEsocial(tipoExame);
+    const filters = [
+      `CODPESSOA eq ${cod} and CODTIPOCONSULTAESOCIAL eq '${tipoEsocial}'`,
+      `CODPESSOA eq ${cod} and CODCONSULTAPRONT eq 1`,
+      `CODPESSOA eq ${cod}`
+    ];
+
+    for (const filter of filters) {
+      const url = new URL(base);
+      url.searchParams.set('$top', '50');
+      url.searchParams.set('$filter', filter);
+      try {
+        const payload = await fetchRmJson(url.toString(), { method: 'GET', signal });
+        const rows = normalizeConsultaRows(payload);
+        if (!rows.length) continue;
+
+        for (const r of rows) {
+          const dt = normalizeRmDateForCompare(pickValue(r, [/^dataconsulta$/, /data consulta/]) ?? r.DATACONSULTA ?? r.dataconsulta);
+          const da = normalizeRmDateForCompare(pickValue(r, [/^dataaso$/, /data aso/]) ?? r.DATAASO ?? r.dataaso);
+          const match = (dt && dateCandidateSet.has(dt)) || (da && dateCandidateSet.has(da));
+          if (!match) continue;
+
+          const foundId =
+            pickValue(r, [/^idconsulta$/, /id\s*consulta/]) ??
+            r.IDCONSULTA ??
+            r.idconsulta ??
+            '';
+          const formatted = formatIdConsulta(foundId);
+          if (formatted) return formatted;
+          return '1';
+        }
+      } catch (e) {
+        const msg = String(e?.message || '');
+        if (msg.startsWith('HTTP 400') || msg.startsWith('HTTP 404') || msg.startsWith('HTTP 405')) continue;
+        if (msg.startsWith('HTTP 500')) return null;
+        return null;
+      }
+    }
+
+    return '';
+  }
+
+  async function verificarIntegracaoNoRm(phase) {
+    if (!rawContext) {
+      showToast('Carregue um arquivo primeiro', 'error');
+      return;
+    }
+    if (consultStatus?.running || integrateStatus?.running) {
+      showToast('Aguarde o processo atual finalizar ou cancele', 'error');
+      return;
+    }
+
+    const normalizedPhase = phase === 'exames' ? 'exames' : 'capa';
+    const sourceRows = normalizedPhase === 'capa' ? (Array.isArray(coverRows) ? coverRows : []) : (Array.isArray(detailRows) ? detailRows : []);
+    const list = sourceRows.filter(r => !r?.blocked);
+    if (!list.length) {
+      showToast('Nenhum registro para verificar no RM', 'error');
+      return;
+    }
+
+    saveApiProxyBaseUrl();
+    saveApiAuth();
+    const authHeaders = getAuthHeaders();
+    if (authHeaders === null) {
+      showToast('Preencha as credenciais/token da API', 'error');
+      return;
+    }
+
+    consultCancelRequested = false;
+    currentConsultAbortController = new AbortController();
+    consultStatus = {
+      running: true,
+      done: 0,
+      total: list.length,
+      ok: 0,
+      fail: 0,
+      startedAt: Date.now(),
+      label: normalizedPhase === 'capa' ? 'Verificação RM (Capa)' : 'Verificação RM (Exames)'
+    };
+    startHistoryRun(normalizedPhase === 'capa' ? 'verificacao_capa' : 'verificacao_exames', list.length);
+    rebuildAndRender(false);
+    updateApiProgressUi();
+    startApiProgressTimer();
+    showToast(`Verificando no RM (${list.length} registro(s))`, 'success');
+
+    try {
+      const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
+      const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: currentConsultAbortController.signal });
+      const funcionarios = normalizeConsultaRows(funcionariosPayload);
+      const funcionarioMap = new Map();
+      funcionarios.forEach(r => {
+        const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
+        const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
+        if (cpf && Number.isFinite(codPessoa)) funcionarioMap.set(cpf, codPessoa);
+      });
+
+      const clampLocal = (n, min, max) => Math.max(min, Math.min(max, n));
+      const concurrency = clampLocal(Number(localStorage.getItem('verifyConcurrency') || '3'), 1, 10);
+      const queue = list.slice();
+      const runners = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (queue.length) {
+          if (consultCancelRequested) return;
+          const row = queue.shift();
+          if (!row) continue;
+
+          const cpf = cpfDigits(row.cpf);
+          const codPessoa = funcionarioMap.get(cpf) || 0;
+          if (!codPessoa) {
+            consultStatus.fail += 1;
+            consultStatus.done += 1;
+            continue;
+          }
+
+          if (normalizedPhase === 'capa') {
+            const coverKey = buildCoverKey(row);
+            const idConsulta = formatIdConsulta(idConsultaByKey?.[coverKey] || row.idConsulta || '');
+            if (!idConsulta) {
+              consultStatus.fail += 1;
+              consultStatus.done += 1;
+              continue;
+            }
+            const insertUrl = buildInsertCapaUrl();
+            const res = await tryGetRmRecord(
+              insertUrl,
+              [`1;${idConsulta}`],
+              { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) },
+              currentConsultAbortController.signal
+            );
+            if (res.found) {
+              const next = normalizeHeaderKey(row.comparativo).includes('integr') ? appendComparativoStatus(row.comparativo, 'Confirmado RM') : 'Encontrado no RM (já lançado)';
+              setIntegrationComparativo('verificacao', row, coverKey, next);
+              consultStatus.ok += 1;
+            } else if (res.error) {
+              setIntegrationComparativo('verificacao', row, coverKey, `Erro verificação (${res.error})`);
+              consultStatus.fail += 1;
+            } else {
+              const next = normalizeHeaderKey(row.comparativo).includes('integr') ? appendComparativoStatus(row.comparativo, 'Não encontrado RM') : appendComparativoStatus(row.comparativo, 'Não encontrado RM');
+              setIntegrationComparativo('verificacao', row, coverKey, next);
+              consultStatus.fail += 1;
+            }
+          } else {
+            const examKey = buildExamKey(row);
+            const coverKey = buildCoverKey(row);
+            const idConsulta = formatIdConsulta(idConsultaByKey?.[coverKey] || row.idConsulta || '');
+            const codExame = Number(String(row.codigoExame || '').replace(/\D/g, ''));
+            if (!idConsulta || !Number.isFinite(codExame)) {
+              consultStatus.fail += 1;
+              consultStatus.done += 1;
+              continue;
+            }
+            const urlBase = new URL(getActiveApiBaseUrl()).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
+            const res = await tryGetRmRecord(
+              urlBase,
+              [`1;00007;${codPessoa};${idConsulta};${codExame}`, `00007;${codPessoa};${idConsulta};${codExame}`, `1;${codPessoa};${idConsulta};${codExame}`, `${codPessoa};${idConsulta};${codExame}`, `${idConsulta};${codExame}`],
+              { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) },
+              currentConsultAbortController.signal
+            );
+            if (res.found) {
+              const next = normalizeHeaderKey(row.comparativo).includes('integr') ? appendComparativoStatus(row.comparativo, 'Confirmado RM') : 'Encontrado no RM (já lançado)';
+              setIntegrationComparativo('verificacao', row, examKey, next);
+              consultStatus.ok += 1;
+            } else if (res.error) {
+              setIntegrationComparativo('verificacao', row, examKey, `Erro verificação (${res.error})`);
+              consultStatus.fail += 1;
+            } else {
+              const next = normalizeHeaderKey(row.comparativo).includes('integr') ? appendComparativoStatus(row.comparativo, 'Não encontrado RM') : appendComparativoStatus(row.comparativo, 'Não encontrado RM');
+              setIntegrationComparativo('verificacao', row, examKey, next);
+              consultStatus.fail += 1;
+            }
+          }
+
+          consultStatus.done += 1;
+          if (consultStatus.done % 20 === 0 || consultStatus.done === consultStatus.total) {
+            rebuildAndRender(false);
+            updateApiProgressUi();
+          }
+        }
+      });
+
+      await Promise.all(runners);
+    } catch (e) {
+      consultStatus.running = false;
+      currentConsultAbortController = null;
+      stopApiProgressTimer();
+      updateApiProgressUi();
+      showToast(String(e?.message || 'Falha na verificação'), 'error');
+      return;
+    }
+
+    rebuildAndRender(false);
+    consultStatus.running = false;
+    currentConsultAbortController = null;
+    stopApiProgressTimer();
+    updateApiProgressUi();
+    finishHistoryRun(Number(consultStatus.ok || 0), Number(consultStatus.fail || 0), { canceled: consultCancelRequested });
+
+    if (consultCancelRequested) {
+      showToast('Verificação cancelada', 'error');
+      return;
+    }
+    if (Number(consultStatus.fail || 0)) {
+      showToast(`Verificação concluída • ${consultStatus.ok || 0} confirmado(s) • ${consultStatus.fail || 0} divergência(s)`, 'error');
+      return;
+    }
+    showToast(`Verificação concluída • ${consultStatus.ok || 0} confirmado(s)`, 'success');
+  }
+
+  function queueAutoResumeFromCheckpoint() {
+    if (integrationResumeScheduled || integrateStatus?.running || consultStatus?.running || !rawContext) return;
+    const checkpoint = loadIntegrationCheckpoint();
+    if (!checkpoint?.active) return;
+    if (checkpoint.fileName && rawContext?.fileName && checkpoint.fileName !== rawContext.fileName) return;
+    if (!Array.isArray(checkpoint.pendingKeys) || checkpoint.pendingKeys.length === 0) return;
+
+    integrationResumeScheduled = true;
+    setTimeout(() => {
+      integrationResumeScheduled = false;
+      if (integrateStatus?.running || consultStatus?.running) return;
+      const latest = loadIntegrationCheckpoint();
+      if (!latest?.active || !Array.isArray(latest.pendingKeys) || latest.pendingKeys.length === 0) return;
+      if (latest.phase === 'capa') {
+        integrarCapaReal(null, { resumeCheckpoint: latest }).catch(e => {
+          finalizeIntegracaoWithError(e?.message || 'Falha na retomada da integração');
+          showToast(String(e?.message || 'Falha na retomada da integração'), 'error');
+        });
+        return;
+      }
+      if (latest.phase === 'exames') {
+        integrarExamesReal(null, { resumeCheckpoint: latest }).catch(e => {
+          finalizeIntegracaoWithError(e?.message || 'Falha na retomada da integração');
+          showToast(String(e?.message || 'Falha na retomada da integração'), 'error');
+        });
+      }
+    }, 350);
+  }
+
   function finalizeIntegracaoWithError(message) {
     if (integrateStatus?.running) integrateStatus.running = false;
     currentIntegrateAbortController = null;
     integrateCancelRequested = false;
+    toggleIntegratePausedState(false);
     stopApiProgressTimer();
     updateApiProgressUi();
     pushMonitorError(integrateStatus?.phase || 'integracao', 'geral', String(message || 'Falha na integração'));
@@ -4957,30 +5937,56 @@
 
     try {
       const url = buildApiUrl(cpf);
+      const timeoutMs = getRmRequestTimeoutMs();
+      const startedAt = Date.now();
       apiDebug = { lastCpf: cpf, lastUrl: url, usedProxy: false, status: '', message: '' };
-      const res = await (async () => {
-        try {
-          return await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
-        } catch (e) {
-          const msg = String(e?.message || '').toLowerCase();
-          if (!msg.includes('failed to fetch')) throw e;
-          const proxyUrl = buildProxyUrl(url);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const fetchDirect = async () => {
+          apiDebug.usedProxy = false;
+          apiDebug.lastUrl = url;
+          return await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders }, signal: controller.signal });
+        };
+        const fetchProxy = async () => {
+          await ensureProxyRunning();
           apiDebug.usedProxy = true;
-          apiDebug.lastUrl = proxyUrl;
-          return fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders } });
+          apiDebug.lastUrl = buildProxyUrl(url);
+          return await fetchViaProxy(url, { method: 'GET', headers: { 'Accept': 'application/json', ...authHeaders }, signal: controller.signal }, 3);
+        };
+
+        let res;
+        if (shouldUseProxyFirst()) {
+          try {
+            res = await fetchProxy();
+          } catch {
+            res = await fetchDirect();
+          }
+        } else {
+          try {
+            res = await fetchDirect();
+          } catch (e) {
+            const msg = String(e?.message || '').toLowerCase();
+            if (!msg.includes('failed to fetch')) throw e;
+            res = await fetchProxy();
+          }
         }
-      })();
 
-      apiDebug.status = `HTTP ${res.status}`;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const elapsedMs = Date.now() - startedAt;
+        apiDebug.status = `HTTP ${res.status}`;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const contentType = res.headers.get('content-type') || '';
-      const payload = contentType.includes('application/json') ? await res.json() : await res.text();
-      const recs = normalizeApiRecords(payload);
-      const match = recs.filter(r => cpfDigits(r.cpf) === cpf);
-      const via = apiDebug.usedProxy ? 'proxy' : 'direto';
-      if (statusEl) statusEl.innerText = `Teste: ${via} • ${apiDebug.status} • ${match.length} registro(s) do CPF`;
-      showToast(`Teste OK (${match.length} registro(s))`, 'success');
+        const contentType = res.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json') ? await res.json() : await res.text();
+        const recs = normalizeApiRecords(payload);
+        const match = recs.filter(r => cpfDigits(r.cpf) === cpf);
+        const via = apiDebug.usedProxy ? 'proxy' : 'direto';
+        if (statusEl) statusEl.innerText = `Teste: ${via} • ${apiDebug.status} • ${match.length} registro(s) • ${(elapsedMs / 1000).toFixed(1)}s`;
+        showToast(`Teste OK (${match.length} registro(s))`, 'success');
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (e) {
       apiDebug.message = String(e?.message || 'Erro');
       const via = apiDebug.usedProxy ? 'proxy' : 'direto';
@@ -5001,29 +6007,32 @@
   }
 
   function isCoverRow(row) {
-    const parecer = classifyParecerAso(row?.parecerAso);
-    if (parecer === 'APTO' || parecer === 'INAPTO') return true;
-
     const code = normalizeCell(row?.codigoExame);
-    if (code !== asoCoverCode) return false;
+    const hasExamCode = Boolean(code);
+    if (hasExamCode) return false;
+
+    const parecer = classifyParecerAso(row?.parecerAso);
+    if (!isSupportedParecerAso(parecer)) return false;
 
     const nomeKey = normalizeHeaderKey(row?.nomeExame);
-    if (nomeKey.includes('avaliacao clinica') || (nomeKey.includes('avaliacao') && nomeKey.includes('clinica'))) {
-      return true;
-    }
+    if (nomeKey.includes('atestado') || nomeKey.includes('aso')) return true;
 
-    return false;
+    return true;
   }
 
   function buildExamRows(rows) {
     return rows.filter(r => {
+      r.blocked = false;
       if (isCoverRow(r)) return false;
       const tipo = normalizeTipoExame(r.tipoExame);
       const situacao = normalizeSituacao(r.situacao);
       if (tipo.includes('periodico') && situacao === 'D') {
-        r.blocked = true;
-        if (!r.comparativo) r.comparativo = 'Ignorado (Periódico + D)';
-        return false;
+        const parecer = classifyParecerAso(r?.parecerAso);
+        if (parecer !== 'INAPTO') {
+          r.blocked = true;
+          if (!r.comparativo) r.comparativo = 'Ignorado (Periódico + D)';
+          return false;
+        }
       }
       return true;
     });
@@ -5051,6 +6060,7 @@
           situacao: r.situacao || '',
           matriculaApi: r.matriculaApi || '',
           dataFicha: r.dataFicha,
+          dataResExame: r.dataResExame || '',
           tipoExame: '',
           nomeExaminador: '',
           parecerAso: '',
@@ -5064,6 +6074,7 @@
       if (isExam) target.qtdeExames += 1;
 
       if (isCoverRow(r)) {
+        if (r.dataResExame) target.dataResExame = r.dataResExame;
         if (r.tipoExame) target.tipoExame = r.tipoExame;
         if (r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
         if (r.parecerAso) target.parecerAso = r.parecerAso;
@@ -5071,6 +6082,7 @@
         if (r.matriculaApi) target.matriculaApi = r.matriculaApi;
         if (r.comparativo) target.comparativo = r.comparativo;
       } else {
+        if (!target.dataResExame && r.dataResExame) target.dataResExame = r.dataResExame;
         if (!target.tipoExame && r.tipoExame) target.tipoExame = r.tipoExame;
         if (!target.nomeExaminador && r.nomeExaminador) target.nomeExaminador = r.nomeExaminador;
         if (!target.parecerAso && r.parecerAso) target.parecerAso = r.parecerAso;
@@ -5081,6 +6093,70 @@
     });
 
     return Array.from(map.values());
+  }
+
+  function updateIdConsultaForCoverKey(coverKey, idConsulta) {
+    const nextValue = formatIdConsulta(idConsulta);
+    if (nextValue) {
+      idConsultaByKey[coverKey] = nextValue;
+    } else {
+      delete idConsultaByKey[coverKey];
+    }
+
+    const syncRow = (row) => {
+      if (buildCoverKey(row) === coverKey) row.idConsulta = nextValue;
+    };
+
+    (Array.isArray(allRows) ? allRows : []).forEach(syncRow);
+    (Array.isArray(detailRows) ? detailRows : []).forEach(syncRow);
+    (Array.isArray(coverRows) ? coverRows : []).forEach(syncRow);
+  }
+
+  function reserveIdConsultaSequence(capas, startAt) {
+    let nextId = Number(startAt || 0);
+    if (!Number.isFinite(nextId) || nextId <= 0) nextId = 1;
+
+    (Array.isArray(capas) ? capas : []).forEach(capa => {
+      const coverKey = buildCoverKey(capa);
+      const currentId = String(capa?.idConsulta || idConsultaByKey?.[coverKey] || '').trim();
+      if (currentId) {
+        const formatted = formatIdConsulta(currentId);
+        updateIdConsultaForCoverKey(coverKey, formatted);
+        capa.idConsulta = formatted;
+        return;
+      }
+
+      const reservedId = formatIdConsulta(nextId);
+      nextId += 1;
+      capa.idConsulta = reservedId;
+      updateIdConsultaForCoverKey(coverKey, reservedId);
+    });
+
+    persistIdConsultaByKey();
+    return nextId;
+  }
+
+  async function ensureIdConsultaForEmptyCovers(covers, signal) {
+    const list = Array.isArray(covers) ? covers : [];
+    const missing = list.filter(row => {
+      const coverKey = buildCoverKey(row);
+      const current = formatIdConsulta(row?.idConsulta || idConsultaByKey?.[coverKey] || '');
+      return !current;
+    });
+    if (!missing.length) return;
+
+    const consultaIdAsoUrl = buildConsultaTipoUrl('IDASO');
+    const idAsoPayload = await fetchRmJson(consultaIdAsoUrl, { method: 'GET', signal });
+    const idRows = normalizeConsultaRows(idAsoPayload);
+    const ultimo = Number(
+      pickValue(idRows?.[0] || {}, [/^ultimoi?d$/, /ultimoi?d/, /ultimo/]) ??
+      idRows?.[0]?.ULTIMOID ??
+      idRows?.[0]?.ultimoiD ??
+      idRows?.[0]?.ultimOid ??
+      0
+    );
+    const nextId = Number.isFinite(ultimo) ? ultimo + 1 : 1;
+    reserveIdConsultaSequence(missing, nextId);
   }
 
   function buildMappingUI() {
@@ -5157,23 +6233,67 @@
     showToast('Mapeamento aplicado', 'success');
   }
 
+  function cloneFilterSets(filters) {
+    const src = filters && typeof filters === 'object' ? filters : {};
+    const out = {};
+    Object.keys(src).forEach(k => {
+      const v = src[k];
+      if (v instanceof Set) out[k] = new Set(v);
+    });
+    return out;
+  }
+
+  function syncCurrentFiltersToMode() {
+    if (importMode === 'capa') {
+      coverColumnFilters = cloneFilterSets(columnFilters);
+      coverGlobalSearch = String(globalSearch || '');
+      return;
+    }
+    examColumnFilters = cloneFilterSets(columnFilters);
+    examGlobalSearch = String(globalSearch || '');
+  }
+
+  function restoreFiltersForMode(mode) {
+    if (mode === 'capa') {
+      columnFilters = cloneFilterSets(coverColumnFilters);
+      globalSearch = String(coverGlobalSearch || '');
+    } else {
+      columnFilters = cloneFilterSets(examColumnFilters);
+      globalSearch = String(examGlobalSearch || '');
+    }
+    const filtroInput = document.getElementById('filtro');
+    if (filtroInput) filtroInput.value = globalSearch;
+  }
+
   function setImportMode(mode) {
+    syncCurrentFiltersToMode();
     importMode = mode === 'exames' ? 'exames' : 'capa';
+    restoreFiltersForMode(importMode);
     document.getElementById('modeCoverBtn')?.classList.toggle('active', importMode === 'capa');
     document.getElementById('modeExamsBtn')?.classList.toggle('active', importMode === 'exames');
-    clearAllFilters(false);
+    if (activePopover) closePopover();
     currentListPage = 1;
     rebuildAndRender();
   }
 
   function onGlobalSearchChange() {
     globalSearch = document.getElementById('filtro')?.value?.toLowerCase() || '';
+    syncCurrentFiltersToMode();
     currentListPage = 1;
     rebuildAndRender(false);
   }
 
   function clearAllFilters(showMsg = true) {
     columnFilters = {};
+    globalSearch = '';
+    coverColumnFilters = {};
+    coverGlobalSearch = '';
+    examColumnFilters = {};
+    examGlobalSearch = '';
+    const filtroInput = document.getElementById('filtro');
+    if (filtroInput) filtroInput.value = '';
+    filteredCoverKeys = new Set((Array.isArray(coverRows) ? coverRows : []).map(r => buildCoverKey(r)));
+    filteredCoverKeysActive = false;
     if (activePopover) closePopover();
     document.querySelectorAll('.th-filter').forEach(btn => btn.classList.remove('active'));
     if (showMsg) showToast('Filtros limpos', 'success');
@@ -5196,10 +6316,15 @@
     employeeCacheErrors = {};
     columnFilters = {};
     globalSearch = '';
+    coverColumnFilters = {};
+    coverGlobalSearch = '';
+    examColumnFilters = {};
+    examGlobalSearch = '';
     currentListPage = 1;
 
     const fileInput = document.getElementById('fileInput');
     if (fileInput) fileInput.value = '';
+    updateFileInputIndicator();
     const filtroInput = document.getElementById('filtro');
     if (filtroInput) filtroInput.value = '';
 
@@ -5209,6 +6334,8 @@
 
     idConsultaByKey = {};
     persistIdConsultaByKey();
+    clearIntegrationCheckpoint();
+    toggleIntegratePausedState(false);
     localStorage.removeItem('coverIntegrated');
     coverIntegrated = false;
 
@@ -5224,22 +6351,52 @@
       renderPagination(0);
       updateRowCount(0, 0);
       updateIntegrateButton();
+      updateProcessActionButtons();
       renderAsoRelatorios();
       showToast('Planilha removida', 'success');
     }
   }
 
-  function getBaseRowsForMode() {
-    return importMode === 'capa' ? coverRows : detailRows;
+  function hasActiveListFilters() {
+    if (String(globalSearch || '').trim()) return true;
+    return Object.values(columnFilters || {}).some(v => v instanceof Set);
   }
 
-  function applyColumnFilters(rows, exceptKey) {
+  function getAvailableColumnKeys(columns) {
+    return new Set((Array.isArray(columns) ? columns : []).map(c => c.key));
+  }
+
+  function updateFilteredCoverScope(rows) {
+    filteredCoverKeys = new Set((Array.isArray(rows) ? rows : []).map(r => buildCoverKey(r)));
+    filteredCoverKeysActive = hasActiveListFilters();
+  }
+
+  function getScopedExamRows() {
+    const rows = Array.isArray(detailRows) ? detailRows : [];
+    if (!filteredCoverKeysActive) return rows;
+    if (!(filteredCoverKeys instanceof Set) || filteredCoverKeys.size === 0) return [];
+    return rows.filter(r => filteredCoverKeys.has(buildCoverKey(r)));
+  }
+
+  function getEffectiveExamRows() {
+    const scoped = getScopedExamRows();
+    const allExamRows = Array.isArray(detailRows) ? detailRows : [];
+    if (filteredCoverKeysActive && scoped.length === 0 && allExamRows.length > 0) return allExamRows;
+    return scoped;
+  }
+
+  function getBaseRowsForMode() {
+    return importMode === 'capa' ? coverRows : getEffectiveExamRows();
+  }
+
+  function applyColumnFilters(rows, exceptKey, availableKeys) {
     const keys = Object.keys(columnFilters || {});
     if (keys.length === 0) return rows;
 
     return rows.filter(r => {
       for (const key of keys) {
         if (key === exceptKey) continue;
+        if (availableKeys instanceof Set && !availableKeys.has(key)) continue;
         const set = columnFilters[key];
         if (!(set instanceof Set)) continue;
         if (set.size === 0) return false;
@@ -5270,6 +6427,8 @@
   function recomputeDerivedRowsFromAllRows() {
     detailRows = buildExamRows(allRows);
     coverRows = buildCoverRows(allRows);
+    filteredCoverKeys = new Set((Array.isArray(coverRows) ? coverRows : []).map(r => buildCoverKey(r)));
+    filteredCoverKeysActive = false;
   }
 
   function clampNumber(value, min, max) {
@@ -5359,12 +6518,42 @@
         allRows = buildDetailRows();
         applyApiToAllRows();
         recomputeDerivedRowsFromAllRows();
+        persistIdConsultaByKey();
       }
 
       const columns = columnsByMode[importMode];
-      const base = getBaseRowsForMode();
-      const withColumnFilters = applyColumnFilters(base);
-      const finalRows = applyGlobalSearch(withColumnFilters, columns);
+      const availableKeys = getAvailableColumnKeys(columns);
+      const resolveFilteredRows = (rows) => {
+        const withColumnFilters = applyColumnFilters(rows, undefined, availableKeys);
+        return applyGlobalSearch(withColumnFilters, columns);
+      };
+
+      let finalRows;
+      if (importMode === 'exames') {
+        const scopedRows = resolveFilteredRows(getScopedExamRows());
+        const allExamRows = resolveFilteredRows(Array.isArray(detailRows) ? detailRows : []);
+        finalRows = filteredCoverKeysActive && scopedRows.length === 0 && allExamRows.length > 0 ? allExamRows : scopedRows;
+      } else {
+        finalRows = resolveFilteredRows(getBaseRowsForMode());
+      }
+
+      if (preserveRenderedRowsOnce && finalRows.length === 0 && Array.isArray(prev.dados) && prev.dados.length > 0) {
+        preserveRenderedRowsOnce = false;
+        dados = prev.dados.slice();
+        const totalPages = getTotalPages(dados.length);
+        currentListPage = clampNumber(currentListPage, 1, totalPages);
+        const start = (currentListPage - 1) * pageSize;
+        const visibleRows = dados.slice(start, start + pageSize);
+        renderTable(columns, visibleRows);
+        renderPagination(dados.length);
+        updateRowCount(visibleRows.length, dados.length);
+        updateIntegrateButton();
+        updateProcessActionButtons();
+        renderAsoRelatorios();
+        return;
+      }
+
+      if (importMode === 'capa') updateFilteredCoverScope(finalRows);
 
       dados = finalRows;
       const totalPages = getTotalPages(finalRows.length);
@@ -5377,6 +6566,7 @@
 
       updateRowCount(visibleRows.length, finalRows.length);
       updateIntegrateButton();
+      updateProcessActionButtons();
       renderAsoRelatorios();
     } catch (e) {
       allRows = prev.allRows;
@@ -5393,6 +6583,7 @@
       renderPagination((dados || []).length);
       updateRowCount(visibleRows.length, (dados || []).length);
       updateIntegrateButton();
+      updateProcessActionButtons();
       showToast(String(e?.message || 'Falha ao atualizar dados da planilha'), 'error');
     }
   }
@@ -5403,35 +6594,12 @@
     if (importMode === 'capa') {
       btn.disabled = dados.length === 0;
     } else {
-      const eligible = detailRows.some(r => {
-        if (r.blocked) return false;
-        const key = buildCoverKey(r);
-        const idConsulta = Number(idConsultaByKey[key] || r.idConsulta || 0);
-        return Number.isFinite(idConsulta) && idConsulta > 0;
-      });
-      btn.disabled = !eligible;
+      btn.disabled = dados.length === 0;
     }
     btn.innerText = importMode === 'capa' ? 'Integrar Capa (parte 1)' : 'Integrar Exames (parte 2)';
 
     const clearBtn = document.getElementById('clearSheetBtn');
     if (clearBtn) clearBtn.disabled = !rawContext;
-  }
-
-  function canDeleteRecord(item) {
-    if (!item) return false;
-    if (consultStatus?.running || integrateStatus?.running) return false;
-    const status = normalizeHeaderKey(item.comparativo);
-    const wasIntegrated = status.includes('integrado');
-    if (!wasIntegrated) return false;
-
-    const coverKey = buildCoverKey(item);
-    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
-    if (!Number.isFinite(idConsulta) || idConsulta <= 0) return false;
-
-    if (importMode === 'capa') return true;
-
-    const codExame = Number(String(item.codigoExame || '').replace(/\D/g, ''));
-    return Number.isFinite(codExame);
   }
 
   async function fetchRmNoParse(url, options) {
@@ -5441,170 +6609,12 @@
       Accept: 'application/json',
       Authorization: `Bearer ${token}`
     };
-    const method = String(options?.method || 'GET').toUpperCase();
-    if (method === 'DELETE') {
-      const proxyUrl = buildProxyUrl(url);
-      if (!proxyUrl) throw new Error('Proxy local não configurado');
-      await ensureProxyRunning();
-      const attempt = async (upstreamMethod) => {
-        const res = await fetch(proxyUrl, {
-          ...(options || {}),
-          method: 'POST',
-          headers: {
-            ...headers,
-            'X-HTTP-Method-Override': 'DELETE',
-            'X-Proxy-Upstream-Method': upstreamMethod
-          }
-        });
-        const text = await res.text().catch(() => '');
-        return { res, text };
-      };
-
-      const first = await attempt('POST');
-      if (first.res.ok) return first.res;
-
-      const second = await attempt('DELETE');
-      if (second.res.ok) return second.res;
-
-      const combined = second.text || first.text || '';
-      if (second.res.status === 405 || first.res.status === 405) {
-        throw new Error('RM não permite exclusão por API neste ambiente (método bloqueado).');
-      }
-      throw new Error(`HTTP ${second.res.status || first.res.status}${combined ? `: ${combined}` : ''}`);
-    }
-
     const res = await fetchWithProxyFallback(url, { ...(options || {}), headers });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new Error(`HTTP ${res.status}${text ? `: ${text}` : ''}`);
     }
     return res;
-  }
-
-  let rmFuncionarioByCpf = null;
-
-  async function ensureRmFuncionarioCache() {
-    if (rmFuncionarioByCpf) return;
-    const payload = await fetchRmJson(buildConsultaTipoUrl('FUNCIONARIO'), { method: 'GET' });
-    const funcs = normalizeConsultaRows(payload);
-    const map = new Map();
-    funcs.forEach(r => {
-      const cpf = cpfDigits(pickValue(r, [/^cpf$/, /cpf/]) ?? r.CPF ?? r.cpf);
-      const codPessoa = Number(pickValue(r, [/^codpessoa$/, /cod pessoa/]) ?? r.CODPESSOA ?? r.codpessoa);
-      if (cpf && Number.isFinite(codPessoa) && !map.has(cpf)) map.set(cpf, codPessoa);
-    });
-    rmFuncionarioByCpf = map;
-  }
-
-  async function deleteCapaOnRm(item) {
-    await ensureRmFuncionarioCache();
-    const cpf = cpfDigits(item.cpf);
-    const codPessoa = rmFuncionarioByCpf?.get(cpf) || 0;
-    if (!codPessoa) throw new Error('CODPESSOA não encontrado');
-
-    const coverKey = buildCoverKey(item);
-    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
-    if (!Number.isFinite(idConsulta) || idConsulta <= 0) throw new Error('IDCONSULTA inválido');
-
-    const candidates = [
-      `1;${codPessoa};${idConsulta}`,
-      `${codPessoa};${idConsulta}`,
-      `${idConsulta}`
-    ];
-
-    const base = buildInsertCapaUrl();
-    let lastError = null;
-    for (const id of candidates) {
-      const url = `${base}/${encodeURIComponent(id)}`;
-      try {
-        await fetchRmNoParse(url, {
-          method: 'DELETE',
-          headers: { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) }
-        });
-        lastError = null;
-        break;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    if (lastError) throw lastError;
-
-    item.comparativo = 'Excluído (RM)';
-    integrationComparativoByKey[coverKey] = item.comparativo;
-    persistIntegrationComparativoByKey();
-    delete idConsultaByKey[coverKey];
-    persistIdConsultaByKey();
-  }
-
-  async function deleteExameOnRm(item) {
-    await ensureRmFuncionarioCache();
-    const cpf = cpfDigits(item.cpf);
-    const codPessoa = rmFuncionarioByCpf?.get(cpf) || 0;
-    if (!codPessoa) throw new Error('CODPESSOA não encontrado');
-
-    const coverKey = buildCoverKey(item);
-    const idConsulta = Number(idConsultaByKey?.[coverKey] || item.idConsulta || 0);
-    if (!Number.isFinite(idConsulta) || idConsulta <= 0) throw new Error('IDCONSULTA inválido');
-    const codExame = Number(String(item.codigoExame || '').replace(/\D/g, ''));
-    if (!Number.isFinite(codExame)) throw new Error('CODEXAME inválido');
-
-    const urlBase = new URL(apiBaseUrl || defaultApiBaseUrl).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
-    const candidates = [
-      `1;${codPessoa};${idConsulta};${codExame}`,
-      `${codPessoa};${idConsulta};${codExame}`,
-      `${idConsulta};${codExame}`
-    ];
-
-    let lastError = null;
-    for (const id of candidates) {
-      const url = `${urlBase}/${encodeURIComponent(id)}`;
-      try {
-        await fetchRmNoParse(url, {
-          method: 'DELETE',
-          headers: { CODCOLIGADA: '1', CODPESSOA: String(codPessoa) }
-        });
-        lastError = null;
-        break;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    if (lastError) throw lastError;
-
-    const examKey = buildExamKey(item);
-    item.comparativo = 'Excluído (RM)';
-    integrationComparativoByKey[examKey] = item.comparativo;
-    persistIntegrationComparativoByKey();
-  }
-
-  function confirmDeleteRecord(item) {
-    if (!canDeleteRecord(item)) return;
-    const coverKey = buildCoverKey(item);
-    const idConsulta = idConsultaByKey?.[coverKey] || item.idConsulta || '';
-    const title = importMode === 'capa' ? 'Excluir CAPA no RM' : 'Excluir EXAME no RM';
-    const details =
-      importMode === 'capa'
-        ? `CPF: ${formatCpf(item.cpf) || item.cpf}\nCHAPA: ${item.matriculaApi || item.matricula}\nIDCONSULTA: ${idConsulta}`
-        : `CPF: ${formatCpf(item.cpf) || item.cpf}\nCHAPA: ${item.matriculaApi || item.matricula}\nIDCONSULTA: ${idConsulta}\nCODEXAME: ${item.codigoExame}`;
-    openConfirmModal(
-      title,
-      'Esta ação tenta excluir o registro no RM e não pode ser desfeita.',
-      details,
-      'Excluir',
-      async () => {
-        try {
-          if (importMode === 'capa') {
-            await deleteCapaOnRm(item);
-          } else {
-            await deleteExameOnRm(item);
-          }
-          rebuildAndRender(false);
-          showToast('Registro excluído no RM', 'success');
-        } catch (e) {
-          showToast(String(e?.message || 'Falha ao excluir'), 'error');
-        }
-      }
-    );
   }
 
   function renderTable(columns, rows) {
@@ -5626,15 +6636,13 @@
       const label = document.createElement('span');
       label.textContent = col.label;
       wrap.appendChild(label);
-      if (col.key !== '__actions') {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'th-filter';
-        btn.textContent = '▾';
-        btn.onclick = (e) => openColumnFilter(col.key, e);
-        if (columnFilters[col.key] instanceof Set) btn.classList.add('active');
-        wrap.appendChild(btn);
-      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'th-filter';
+      btn.textContent = '▾';
+      btn.onclick = (e) => openColumnFilter(col.key, e);
+      if (columnFilters[col.key] instanceof Set) btn.classList.add('active');
+      wrap.appendChild(btn);
       th.appendChild(wrap);
       tr.appendChild(th);
     });
@@ -5657,22 +6665,7 @@
       tr.onclick = () => openRecordModal(item);
       columns.forEach(col => {
         const td = document.createElement('td');
-        if (col.key === '__actions') {
-          td.style.whiteSpace = 'nowrap';
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'button button--danger';
-          btn.textContent = 'Excluir';
-          btn.disabled = !canDeleteRecord(item);
-          btn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            confirmDeleteRecord(item);
-          };
-          td.appendChild(btn);
-        } else {
-          td.textContent = normalizeCell(item[col.key]);
-        }
+        td.textContent = normalizeCell(item[col.key]);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -5921,6 +6914,7 @@
       current.clear();
       allValues.forEach(v => current.add(v));
       delete columnFilters[key];
+      syncCurrentFiltersToMode();
       currentListPage = 1;
       rebuildAndRender(false);
       closePopover();
@@ -5936,6 +6930,7 @@
       } else {
         columnFilters[key] = new Set(current);
       }
+      syncCurrentFiltersToMode();
       currentListPage = 1;
       rebuildAndRender(false);
       closePopover();
@@ -6055,9 +7050,11 @@
         buildMappingUI();
         currentListPage = 1;
         rebuildAndRender(true);
+        updateFileInputIndicator();
         void saveLastContext();
         renderImportTrackingPanels();
         showToast('Arquivo carregado com sucesso', 'success');
+        queueAutoResumeFromCheckpoint();
       } catch (err) {
         rawContext = prev.rawContext;
         dados = prev.dados;
@@ -6071,6 +7068,7 @@
         currentListPage = prev.currentListPage;
         const fileInput = document.getElementById('fileInput');
         if (fileInput) fileInput.value = '';
+        updateFileInputIndicator();
         rebuildAndRender(false);
         showToast(String(err?.message || 'Falha ao ler o arquivo'), 'error');
       }
@@ -6084,7 +7082,7 @@
   }
 
   function buildConsultaTipoUrl(tipo) {
-    const base = defaultApiBaseUrl.replace(/CPF=\{cpf\}/i, '').replace(/;CPF=\{cpf\}/i, '');
+    const base = getActiveApiBaseUrl().replace(/CPF=\{cpf\}/i, '').replace(/;CPF=\{cpf\}/i, '');
     if (base.toLowerCase().includes('parameters=')) {
       const hasTipo = /[?&]parameters=[^#]*tipo=/i.test(base) || /;tipo=/i.test(base);
       if (hasTipo) return base.replace(/TIPO=[^;&]+/i, `TIPO=${encodeURIComponent(tipo)}`);
@@ -6095,12 +7093,12 @@
   }
 
   function buildTokenUrl() {
-    const u = new URL(apiBaseUrl || defaultApiBaseUrl);
-    return `${u.origin}/api/connect/token/`;
+    const u = new URL(getActiveApiBaseUrl());
+    return `${u.origin}/api/connect/token`;
   }
 
   function buildInsertCapaUrl() {
-    const u = new URL(apiBaseUrl || defaultApiBaseUrl);
+    const u = new URL(getActiveApiBaseUrl());
     return `${u.origin}/RMSRestDataServer/rest/SmtConsultasProntData`;
   }
 
@@ -6119,17 +7117,80 @@
   }
 
   async function ensureProxyRunning() {
+    if (Date.now() < Number(proxyHealthOkUntil || 0)) return;
     const url = buildProxyHealthUrl();
     if (!url) throw new Error('Proxy local não configurado');
     try {
       const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      proxyHealthOkUntil = Date.now() + 15000;
     } catch {
-      throw new Error('Proxy local não está rodando (execute: node proxy.js)');
+      throw new Error('Proxy FastAPI não está disponível. Inicie o servidor local em 127.0.0.1:8787.');
     }
   }
 
+  function shouldUseProxyFirst() {
+    const base = String(apiProxyBaseUrl || '').trim();
+    if (!base) return false;
+    if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return false;
+    try {
+      const proxyUrl = new URL(base, window.location.origin);
+      return proxyUrl.pathname.includes('/proxy');
+    } catch {
+      return false;
+    }
+  }
+
+  function shouldRetryProxyResponse(res, options) {
+    const method = String(options?.method || 'GET').toUpperCase();
+    if (method !== 'GET') return false;
+    return [408, 429, 500, 502, 503, 504].includes(Number(res?.status || 0));
+  }
+
+  async function waitBeforeRetry(ms) {
+    await new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function fetchViaProxy(url, options, attempts = 1) {
+    const proxyUrl = buildProxyUrl(url);
+    if (!proxyUrl) throw new Error('Proxy local não configurado');
+
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const res = await fetch(proxyUrl, options);
+        if (Number(res?.status || 0) === 500) {
+          const u = String(url || '');
+          if (u.includes('/SmtConsultasProntData') || u.includes('/SmtExamesProntPessoaData')) return res;
+        }
+        if (!shouldRetryProxyResponse(res, options) || attempt === attempts) return res;
+      } catch (err) {
+        lastError = err;
+        if (attempt === attempts) break;
+      }
+
+      await waitBeforeRetry(Math.min(250 * attempt, 800));
+    }
+
+    if (lastError) throw lastError;
+    throw new Error('Falha ao acessar RM via proxy local');
+  }
+
   async function fetchWithProxyFallback(url, options) {
+    const preferProxy = shouldUseProxyFirst();
+    if (preferProxy) {
+      try {
+        await ensureProxyRunning();
+        return await fetchViaProxy(url, options, 3);
+      } catch (proxyError) {
+        try {
+          return await fetch(url, options);
+        } catch {
+          throw proxyError;
+        }
+      }
+    }
+
     try {
       return await fetch(url, options);
     } catch (e) {
@@ -6139,7 +7200,7 @@
       if (!proxyUrl) throw e;
       await ensureProxyRunning();
       try {
-        return await fetch(proxyUrl, options);
+        return await fetchViaProxy(url, options, 3);
       } catch {
         throw new Error('Falha ao acessar RM via proxy local');
       }
@@ -6166,11 +7227,19 @@
     if (clientSecret) params.set('client_secret', clientSecret);
     if (scope) params.set('scope', scope);
 
-    const res = await fetchWithProxyFallback(tokenUrl, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), getRmRequestTimeoutMs());
+    let res;
+    try {
+      res = await fetchWithProxyFallback(tokenUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
@@ -6223,13 +7292,91 @@
 
   function guessCodTipoConsultaEsocial(tipoExame) {
     const k = normalizeHeaderKey(tipoExame);
-    if (!k) return 'P';
+    if (!k) return 'I';
     if (k.includes('period')) return 'P';
     if (k.includes('admiss')) return 'A';
     if (k.includes('demiss')) return 'D';
     if (k.includes('retorno')) return 'R';
     if (k.includes('mudanca') || k.includes('mudança') || k.includes('funcao') || k.includes('função')) return 'M';
-    return 'P';
+    if (k.includes('monitor')) return 'N';
+    if (k.includes('nao informado') || k.includes('não informado') || k.includes('nao-informado') || k.includes('não-informado')) return 'I';
+    return 'I';
+  }
+
+  function getCodTipoConsultaFromEsocial(tipoEsocial) {
+    const t = String(tipoEsocial || '').toUpperCase();
+    const map = {
+      P: '00003',
+      A: '00004',
+      D: '00005',
+      I: '00006',
+      M: '00007',
+      N: '00008',
+      R: '00009'
+    };
+    return map[t] || '00006';
+  }
+
+  function getCodTipoConsultaFromTipoExame(tipoExame) {
+    const tipo = guessCodTipoConsultaEsocial(tipoExame);
+    return getCodTipoConsultaFromEsocial(tipo);
+  }
+
+  function loadExamCodeAliases() {
+    const defaults = { '28010540': '40316521' };
+    try {
+      const raw = localStorage.getItem('examCodeAliases') || '{}';
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaults;
+      return { ...defaults, ...parsed };
+    } catch {
+      return defaults;
+    }
+  }
+
+  function normalizeExamNameForMatch(value) {
+    const key = normalizeHeaderKey(value);
+    if (!key) return '';
+    const withoutPrefix = key.replace(/^\d{1,6}\s*-\s*/g, '').trim();
+    const tokens = withoutPrefix.split(/\s+/).filter(Boolean);
+    const stop = new Set(['e', 'ou', 'do', 'da', 'de', 'dos', 'das', 'para', 'por', 'em', 'no', 'na', 'pesquisa', 'dosagem', 'ultrassensivel', 'ultra', 'sensivel', 'sensível']);
+    const filtered = tokens.filter(t => !stop.has(t));
+    return filtered.join(' ').trim();
+  }
+
+  function resolveRmExamCode(rawCode, nameKey, procByCode, codeByProc, nameToCode) {
+    const code = Number(rawCode || 0);
+    if (Number.isFinite(code) && procByCode?.has?.(code)) return code;
+
+    if (Number.isFinite(code) && codeByProc?.has?.(code)) {
+      const mapped = Number(codeByProc.get(code) || 0);
+      if (Number.isFinite(mapped) && procByCode?.has?.(mapped)) return mapped;
+    }
+
+    const aliases = loadExamCodeAliases();
+    const alias = Number(String(aliases[String(rawCode || '')] || '').replace(/\D/g, ''));
+    if (Number.isFinite(alias) && alias > 0 && procByCode?.has?.(alias)) return alias;
+
+    const nk = normalizeExamNameForMatch(nameKey);
+    if (nk && nameToCode && typeof nameToCode?.forEach === 'function') {
+      let best = 0;
+      let bestCode = 0;
+      nameToCode.forEach((v, k) => {
+        if (!k) return;
+        const kk = normalizeExamNameForMatch(k);
+        if (!kk) return;
+        if (nk.includes(kk) || kk.includes(nk)) {
+          const score = Math.min(kk.length, nk.length);
+          if (score > best) {
+            best = score;
+            bestCode = Number(v || 0);
+          }
+        }
+      });
+      if (Number.isFinite(bestCode) && bestCode > 0 && procByCode?.has?.(bestCode)) return bestCode;
+    }
+
+    return code;
   }
 
   function formatDateForRm(value) {
@@ -6252,19 +7399,50 @@
     return s;
   }
 
-  async function integrarCapaReal(capasToIntegrate) {
-    showToast('Integrando capa...', 'success');
+  function getCoverReferenceDateValue(row) {
+    return normalizeCell(row?.dataResExame || row?.dataFicha || '');
+  }
+
+  function getCoverReferenceDateForRm(row) {
+    return formatDateForRm(getCoverReferenceDateValue(row));
+  }
+
+  function applyIntegrationPhaseResult(phase, row, key, message, success) {
+    const raw = String(message || '');
+    const finalMsg = success ? raw : raw.length > 220 ? compactHttpErrorMessage(raw) : raw;
+    row.comparativo = finalMsg;
+    integrationComparativoByKey[key] = row.comparativo;
+    persistIntegrationComparativoByKey();
+    if (success) return;
+    pushMonitorError(phase, key, row.comparativo);
+  }
+
+  async function integrarCapaReal(capasToIntegrate, options = {}) {
+    const phase = 'capa';
+    const resumeCheckpoint = options?.resumeCheckpoint && typeof options.resumeCheckpoint === 'object' ? options.resumeCheckpoint : null;
+    let checkpoint = resumeCheckpoint || buildIntegrationCheckpoint(phase, Array.isArray(capasToIntegrate) ? capasToIntegrate.filter(r => !r?.blocked) : coverRows.filter(r => !r?.blocked), { retryOnly: Boolean(options?.retryFailed) });
+    if (!checkpoint.total) {
+      showToast('Nenhuma capa pendente para integrar', 'error');
+      return;
+    }
+
+    showToast(resumeCheckpoint ? 'Retomando integração de capa...' : options?.retryFailed ? 'Reprocessando falhas de capa...' : 'Integrando capa...', 'success');
     integrateCancelRequested = false;
+    toggleIntegratePausedState(false);
     currentIntegrateAbortController = new AbortController();
-    const list = Array.isArray(capasToIntegrate) ? capasToIntegrate : coverRows;
-    integrateStatus = { running: true, phase: 'capa', done: 0, total: list.length, ok: 0, fail: 0, startedAt: Date.now() };
-    startHistoryRun('capa', list.length);
+    checkpoint.paused = false;
+    checkpoint.active = true;
+    checkpoint.phase = phase;
+    checkpoint.fileName = String(rawContext?.fileName || checkpoint.fileName || '');
+    saveIntegrationCheckpoint(checkpoint);
+    syncIntegrateStatusWithCheckpoint(checkpoint, phase);
+    integrateStatus.running = true;
+    startHistoryRun('capa', Math.max(0, Number(checkpoint.pendingKeys?.length || checkpoint.total)));
     updateApiProgressUi();
     startApiProgressTimer();
 
     const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
     const consultaMedicoUrl = buildConsultaTipoUrl('MEDICO');
-    const consultaIdAsoUrl = buildConsultaTipoUrl('IDASO');
     const insertUrl = buildInsertCapaUrl();
 
     const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
@@ -6286,98 +7464,137 @@
       if (nome && Number.isFinite(codigo)) medicoMap.set(nome, codigo);
     });
 
-    const idAsoPayload = await fetchRmJson(consultaIdAsoUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
-    const idRows = normalizeConsultaRows(idAsoPayload);
-    const ultimo = Number(
-      pickValue(idRows?.[0] || {}, [/^ultimoi?d$/, /ultimoi?d/, /ultimo/]) ??
-      idRows?.[0]?.ULTIMOID ??
-      idRows?.[0]?.ultimoiD ??
-      idRows?.[0]?.ultimOid ??
-      0
-    );
-    let nextId = Number.isFinite(ultimo) ? ultimo + 1 : 1;
+    const pendingRows = (Array.isArray(checkpoint.pendingKeys) ? checkpoint.pendingKeys : [])
+      .map(key => findPhaseRowByKey(phase, key))
+      .filter(Boolean);
+    await ensureIdConsultaForEmptyCovers(pendingRows, currentIntegrateAbortController.signal);
+    rebuildAndRender(false);
+    updateApiProgressUi();
 
     const createdBy = localStorage.getItem('rmRecCreatedBy') || '00204443385';
     const codColigada = 1;
     const codConsultaPront = 1;
     const codEntidade = '00007';
     const codTipoConsulta = '00003';
+    const batchSize = Math.max(1, Number(checkpoint.batchSize || 25));
+    const existingCapaCache = new Map();
+    let disableRmCapaDedupe = false;
+    let warnedRmCapaDedupe = false;
 
-    let ok = 0;
-    let fail = 0;
-
-    for (const capa of list) {
+    for (const coverKey of [...(checkpoint.pendingKeys || [])]) {
       if (integrateCancelRequested) break;
-      if (capa.blocked) continue;
-      const coverKey = buildCoverKey(capa);
+      await waitWhileIntegrationPaused();
+      if (integrateCancelRequested) break;
+
+      const capa = findPhaseRowByKey(phase, coverKey);
+      if (!capa) {
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
+        rebuildAndRender(false);
+        updateApiProgressUi();
+        continue;
+      }
 
       const cpf = cpfDigits(capa.cpf);
       const func = funcionarioMap.get(cpf);
       if (!func) {
-        capa.comparativo = 'Erro integração (sem CODPESSOA)';
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('capa', coverKey, capa.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Erro integração (sem CODPESSOA)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
+        continue;
+      }
+
+      const compKey = normalizeHeaderKey(integrationComparativoByKey?.[coverKey] || capa.comparativo || '');
+      if (compKey.includes('rm: consulta ja existe')) {
+        const known = formatIdConsulta(capa.idConsulta || idConsultaByKey?.[coverKey] || '');
+        if (known) {
+          updateIdConsultaForCoverKey(coverKey, known);
+          persistIdConsultaByKey();
+          capa.idConsulta = known;
+        }
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, ok: true }) || checkpoint;
         continue;
       }
 
       const medicoNomeKey = normalizeHeaderKey(capa.nomeExaminador);
       const codMedico = medicoNomeKey ? medicoMap.get(medicoNomeKey) : null;
       if (!codMedico) {
-        capa.comparativo = 'Erro integração (médico não encontrado)';
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('capa', coverKey, capa.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Erro integração (médico não encontrado)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
         continue;
       }
 
       const status = classifyParecerAso(capa.parecerAso);
-      if (status !== 'APTO' && status !== 'INAPTO') {
-        capa.comparativo = 'Erro integração (parecer indefinido)';
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('capa', coverKey, capa.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+      const aptoValue = getAptoValueFromParecer(status);
+      if (aptoValue === null) {
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Erro integração (parecer indefinido)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
         continue;
       }
 
-      const data = formatDateForRm(capa.dataFicha);
+      const data = getCoverReferenceDateForRm(capa);
       if (!data) {
-        capa.comparativo = 'Erro integração (data inválida)';
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('capa', coverKey, capa.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Erro integração (data inválida)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
+        continue;
+      }
+
+      const tipoEsocial = guessCodTipoConsultaEsocial(capa.tipoExame);
+      const codTipoConsulta = getCodTipoConsultaFromEsocial(tipoEsocial);
+
+      const reservedId = Number(capa.idConsulta || idConsultaByKey?.[coverKey] || 0);
+      if (!Number.isFinite(reservedId) || reservedId <= 0) {
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Erro integração (sem IdASO reservado)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
+        continue;
+      }
+
+      let existingId = '';
+      if (!disableRmCapaDedupe) {
+        const cacheKey = `${func.codPessoa}|${guessCodTipoConsultaEsocial(capa.tipoExame)}|${data}`;
+        const cached = existingCapaCache.get(cacheKey);
+        const lookup =
+          typeof cached === 'string'
+            ? cached
+            : await findExistingCapaIdConsultaOnRm(func.codPessoa, data, capa.tipoExame, currentIntegrateAbortController.signal);
+        if (lookup === null) {
+          disableRmCapaDedupe = true;
+          if (!warnedRmCapaDedupe) {
+            warnedRmCapaDedupe = true;
+            showToast('RM está respondendo 500 na verificação de duplicidade. Integração continua sem checagem por data nesta execução.', 'error');
+          }
+          existingId = '';
+          existingCapaCache.set(cacheKey, '');
+        } else {
+          existingId = String(lookup || '');
+          if (typeof cached !== 'string') existingCapaCache.set(cacheKey, existingId);
+        }
+      }
+
+      if (existingId) {
+        updateIdConsultaForCoverKey(coverKey, existingId);
+        persistIdConsultaByKey();
+        capa.idConsulta = existingId;
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Capa já existe no RM (mesma data)', true);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, ok: true }) || checkpoint;
         continue;
       }
 
       const payload = {
         CODPESSOA: func.codPessoa,
         CODCOLIGADA: codColigada,
-        IDCONSULTA: nextId,
+        IDCONSULTA: reservedId,
         CODCONSULTAPRONT: codConsultaPront,
         RECCREATEDBY: createdBy,
         OBSERVACAO: null,
         RECCREATEDON: data,
         DATACONSULTA: data,
         RECMODIFIEDBY: createdBy,
-        APTO: status === 'APTO' ? 1 : 0,
+        APTO: aptoValue,
         RECMODIFIEDON: data,
         CODTIPOCONSULTA: codTipoConsulta,
         NOMEMEDICO: null,
         REGCONSELHO: null,
         CODMEDICO: codMedico,
-        CODTIPOCONSULTAESOCIAL: guessCodTipoConsultaEsocial(capa.tipoExame),
+        CODTIPOCONSULTAESOCIAL: tipoEsocial,
         HORACONSULTA: null,
         TIPO: 1,
         INICIOATENDIMENTO: null,
@@ -6403,34 +7620,43 @@
           body: JSON.stringify(payload),
           signal: currentIntegrateAbortController.signal
         });
-        capa.comparativo = 'Capa integrada';
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        idConsultaByKey[coverKey] = String(nextId);
+        applyIntegrationPhaseResult(phase, capa, coverKey, 'Capa integrada', true);
+        updateIdConsultaForCoverKey(coverKey, reservedId);
         persistIdConsultaByKey();
-        capa.idConsulta = String(nextId);
-        nextId += 1;
-        ok += 1;
-        integrateStatus.ok += 1;
+        capa.idConsulta = String(reservedId);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, ok: true }) || checkpoint;
       } catch (e) {
-        capa.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
-        integrationComparativoByKey[coverKey] = capa.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('capa', coverKey, capa.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        nextId += 1;
+        const msg = String(e?.message || 'falha');
+        const looksLikeDuplicate = normalizeHeaderKey(msg).includes('chave duplicada') || msg.includes('"code":"0007"') || msg.includes('"code":"00007"');
+        const confirmRes = await fetchRmCapaById(func.codPessoa, reservedId, currentIntegrateAbortController.signal);
+        if (confirmRes.found) {
+          applyIntegrationPhaseResult(
+            phase,
+            capa,
+            coverKey,
+            looksLikeDuplicate ? 'Capa já existe no RM' : 'Capa integrada (confirmada no RM após retorno de erro)',
+            true
+          );
+          updateIdConsultaForCoverKey(coverKey, reservedId);
+          persistIdConsultaByKey();
+          capa.idConsulta = String(reservedId);
+          checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, ok: true }) || checkpoint;
+        } else {
+          const confirmMsg = confirmRes.error ? `; confirmação RM: ${compactHttpErrorMessage(confirmRes.error)}` : '';
+          applyIntegrationPhaseResult(phase, capa, coverKey, `Erro integração (${compactHttpErrorMessage(msg)}${confirmMsg})`, false);
+          checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: coverKey, fail: true }) || checkpoint;
+        }
       }
 
-      integrateStatus.done += 1;
-      if (integrateStatus.done % 5 === 0 || integrateStatus.done === integrateStatus.total) {
+      if (integrateStatus.done % batchSize === 0 || integrateStatus.done === integrateStatus.total) {
         rebuildAndRender(false);
         updateApiProgressUi();
       }
     }
 
-    coverIntegrated = coverIntegrated || ok > 0;
+    coverIntegrated = coverIntegrated || Number(checkpoint.ok || 0) > 0;
     localStorage.setItem('coverIntegrated', coverIntegrated ? '1' : '0');
+    preserveRenderedRowsOnce = true;
     rebuildAndRender(false);
     updateIntegrateButton();
     integrateStatus.running = false;
@@ -6438,36 +7664,51 @@
     stopApiProgressTimer();
     updateApiProgressUi();
 
-    monitorSummary.capa = { total: integrateStatus.total, ok, fail };
+    monitorSummary.capa = { total: integrateStatus.total, ok: Number(checkpoint.ok || 0), fail: Number(checkpoint.fail || 0) };
     persistMonitor();
     renderMonitorPanel();
-    finishHistoryRun(ok, fail, { canceled: integrateCancelRequested });
+    finishHistoryRun(Number(checkpoint.ok || 0), Number(checkpoint.fail || 0), { canceled: integrateCancelRequested });
 
+    if (!integrateCancelRequested) clearIntegrationCheckpoint();
     if (integrateCancelRequested) {
       showToast('Integração de capa cancelada', 'error');
       return;
     }
-
-    if (fail) {
-      showToast(`Capa integrada • ${ok} ok • ${fail} falha(s)`, 'error');
+    if (Number(checkpoint.fail || 0)) {
+      showToast(`Capa integrada • ${checkpoint.ok || 0} ok • ${checkpoint.fail || 0} falha(s)`, 'error');
       return;
     }
-    showToast(`Capa integrada • ${ok} ok`, 'success');
+    showToast(`Capa integrada • ${checkpoint.ok || 0} ok`, 'success');
   }
 
-  async function integrarExamesReal(examesToIntegrate) {
-    showToast('Integrando exames...', 'success');
+  async function integrarExamesReal(examesToIntegrate, options = {}) {
+    const phase = 'exames';
+    const resumeCheckpoint = options?.resumeCheckpoint && typeof options.resumeCheckpoint === 'object' ? options.resumeCheckpoint : null;
+    let checkpoint = resumeCheckpoint || buildIntegrationCheckpoint(phase, Array.isArray(examesToIntegrate) ? examesToIntegrate.filter(r => !r?.blocked) : detailRows.filter(r => !r?.blocked), { retryOnly: Boolean(options?.retryFailed) });
+    if (!checkpoint.total) {
+      showToast('Nenhum exame pendente para integrar', 'error');
+      return;
+    }
+
+    showToast(resumeCheckpoint ? 'Retomando integração de exames...' : options?.retryFailed ? 'Reprocessando falhas de exames...' : 'Integrando exames...', 'success');
     integrateCancelRequested = false;
+    toggleIntegratePausedState(false);
     currentIntegrateAbortController = new AbortController();
-    const list = Array.isArray(examesToIntegrate) ? examesToIntegrate : detailRows;
-    integrateStatus = { running: true, phase: 'exames', done: 0, total: list.length, ok: 0, fail: 0, startedAt: Date.now() };
-    startHistoryRun('exames', list.length);
+    checkpoint.paused = false;
+    checkpoint.active = true;
+    checkpoint.phase = phase;
+    checkpoint.fileName = String(rawContext?.fileName || checkpoint.fileName || '');
+    saveIntegrationCheckpoint(checkpoint);
+    syncIntegrateStatusWithCheckpoint(checkpoint, phase);
+    integrateStatus.running = true;
+    startHistoryRun('exames', Math.max(0, Number(checkpoint.pendingKeys?.length || checkpoint.total)));
     updateApiProgressUi();
     startApiProgressTimer();
 
     const consultaFuncionarioUrl = buildConsultaTipoUrl('FUNCIONARIO');
     const consultaExameUrl = buildConsultaTipoUrl('EXAME');
-    const insertUrl = new URL(apiBaseUrl || defaultApiBaseUrl).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
+    const insertUrl = new URL(getActiveApiBaseUrl()).origin + '/RMSRestDataServer/rest/SmtExamesProntPessoaData';
+    const shouldCheckExisting = Boolean(options?.retryFailed);
 
     const funcionariosPayload = await fetchRmJson(consultaFuncionarioUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const funcionarios = normalizeConsultaRows(funcionariosPayload);
@@ -6482,93 +7723,130 @@
     const examePayload = await fetchRmJson(consultaExameUrl, { method: 'GET', signal: currentIntegrateAbortController.signal });
     const exames = normalizeConsultaRows(examePayload);
     const procByCode = new Map();
+    const codeByProc = new Map();
+    const nameToCode = new Map();
     exames.forEach(r => {
       const code = Number(pickValue(r, [/^codexame$/, /cod exame/]) ?? r.CODEXAME ?? r.codexame);
       const proc = normalizeCell(pickValue(r, [/^codprocedimento$/, /procedimento/]) ?? r.CODPROCEDIMENTO ?? r.codprocedimento);
       if (Number.isFinite(code) && proc) procByCode.set(code, proc);
+      const procNum = Number(String(proc || '').replace(/\D/g, ''));
+      if (Number.isFinite(code) && Number.isFinite(procNum) && procNum > 0 && !codeByProc.has(procNum)) codeByProc.set(procNum, code);
+      const examNameKey = normalizeExamNameForMatch(pickValue(r, [/^exame$/, /nome.*exame/, /descricao/]) ?? r.EXAME ?? r.NOME ?? r.nome ?? '');
+      if (examNameKey && Number.isFinite(code) && code > 0 && !nameToCode.has(examNameKey)) nameToCode.set(examNameKey, code);
     });
 
     const aptoByKey = new Map();
     coverRows.forEach(c => {
       const key = buildCoverKey(c);
       const status = classifyParecerAso(c.parecerAso);
-      if (status === 'APTO') aptoByKey.set(key, 1);
-      if (status === 'INAPTO') aptoByKey.set(key, 0);
+      const aptoValue = getAptoValueFromParecer(status);
+      if (aptoValue !== null) aptoByKey.set(key, aptoValue);
     });
 
-    let ok = 0;
-    let fail = 0;
+    const coverByKey = new Map((Array.isArray(coverRows) ? coverRows : []).map(c => [buildCoverKey(c), c]));
+    const coversNeededMap = new Map();
+    (Array.isArray(checkpoint.pendingKeys) ? checkpoint.pendingKeys : []).forEach(examKey => {
+      const ex = findPhaseRowByKey(phase, examKey);
+      if (!ex) return;
+      const coverKey = buildCoverKey(ex);
+      if (!coverKey) return;
+      if (coversNeededMap.has(coverKey)) return;
+      coversNeededMap.set(
+        coverKey,
+        coverByKey.get(coverKey) || {
+          nomeFuncionario: ex.nomeFuncionario,
+          cpf: ex.cpf,
+          matricula: ex.matricula,
+          situacao: ex.situacao || '',
+          matriculaApi: ex.matriculaApi || '',
+          dataFicha: ex.dataFicha,
+          tipoExame: ex.tipoExame || '',
+          nomeExaminador: ex.nomeExaminador || '',
+          parecerAso: ex.parecerAso || '',
+          qtdeExames: 0,
+          comparativo: '',
+          idConsulta: ex.idConsulta || ''
+        }
+      );
+    });
+    await ensureIdConsultaForEmptyCovers(Array.from(coversNeededMap.values()), currentIntegrateAbortController.signal);
+    rebuildAndRender(false);
+    updateApiProgressUi();
 
-    for (const ex of list) {
+    const batchSize = Math.max(1, Number(checkpoint.batchSize || 25));
+
+    for (const examKey of [...(checkpoint.pendingKeys || [])]) {
       if (integrateCancelRequested) break;
-      if (ex.blocked) continue;
+      await waitWhileIntegrationPaused();
+      if (integrateCancelRequested) break;
+
+      const ex = findPhaseRowByKey(phase, examKey);
+      if (!ex) {
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
+        rebuildAndRender(false);
+        updateApiProgressUi();
+        continue;
+      }
 
       const key = buildCoverKey(ex);
-      const examKey = `${key}|${normalizeCell(ex.codigoExame || '')}|${formatDateTimeForRmExam(ex.dataResExame || ex.dataFicha)}`;
-
       const cpf = cpfDigits(ex.cpf);
       const func = funcionarioMap.get(cpf);
       if (!func) {
-        ex.comparativo = 'Erro integração (sem CODPESSOA)';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Erro integração (sem CODPESSOA)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
         continue;
       }
 
       const idConsulta = Number(idConsultaByKey[key] || ex.idConsulta || 0);
       if (!Number.isFinite(idConsulta) || idConsulta <= 0) {
-        ex.comparativo = 'Erro integração (sem IDCONSULTA)';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Erro integração (sem IDCONSULTA)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
         continue;
       }
 
-      const codExame = Number(String(ex.codigoExame || '').replace(/\D/g, ''));
-      if (!Number.isFinite(codExame)) {
-        ex.comparativo = 'Erro integração (CODEXAME inválido)';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+      const rawCodExame = Number(String(ex.codigoExame || '').replace(/\D/g, ''));
+      const codExame = resolveRmExamCode(rawCodExame, normalizeHeaderKey(ex.nomeExame), procByCode, codeByProc, nameToCode);
+      if (!Number.isFinite(codExame) || codExame <= 0) {
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Erro integração (CODEXAME inválido)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
         continue;
       }
 
       const codProcedimento = procByCode.get(codExame) || '';
       if (!codProcedimento) {
-        ex.comparativo = 'Erro integração (CODPROCEDIMENTO não encontrado)';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Erro integração (CODEXAME não encontrado na tabela de exames do RM)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
         continue;
       }
 
       const data = formatDateTimeForRmExam(ex.dataResExame || ex.dataFicha);
       if (!data) {
-        ex.comparativo = 'Erro integração (DATAEXAME inválida)';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
-        integrateStatus.done += 1;
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Erro integração (DATAEXAME inválida)', false);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
         continue;
       }
 
-      const apto = aptoByKey.has(key) ? aptoByKey.get(key) : 1;
+      if (shouldCheckExisting) {
+        const exists = await tryGetRmRecord(
+          insertUrl,
+          [`1;00007;${func.codPessoa};${idConsulta};${codExame}`, `00007;${func.codPessoa};${idConsulta};${codExame}`, `1;${func.codPessoa};${idConsulta};${codExame}`, `${func.codPessoa};${idConsulta};${codExame}`, `${idConsulta};${codExame}`],
+          { CODCOLIGADA: '1', CODPESSOA: String(func.codPessoa) },
+          currentIntegrateAbortController.signal
+        );
+        if (exists.found) {
+          applyIntegrationPhaseResult(phase, ex, examKey, 'Exame já existe no RM', true);
+          checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, ok: true }) || checkpoint;
+          continue;
+        }
+        if (exists.error) {
+          applyIntegrationPhaseResult(phase, ex, examKey, `Erro verificação (${exists.error})`, false);
+          checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
+          continue;
+        }
+      }
 
+      const apto = aptoByKey.has(key) ? aptoByKey.get(key) : 1;
+      const tipoEsocial = guessCodTipoConsultaEsocial(ex.tipoExame);
       const payload = {
         CODCOLIGADA: 1,
         CODENTIDADE: '00007',
@@ -6577,6 +7855,7 @@
         CODPROCEDIMENTO: codProcedimento,
         DATAEXAME: data,
         APTO: apto,
+        TIPOEXAME: tipoEsocial,
         ATIVOOCUPACIONAL: 0,
         EXAMERECUSADO: 0,
         EXAMEREFERENCIAL: 0,
@@ -6601,50 +7880,62 @@
           body: JSON.stringify(payload),
           signal: currentIntegrateAbortController.signal
         });
-        ex.comparativo = 'Exame integrado';
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        ok += 1;
-        integrateStatus.ok += 1;
+        applyIntegrationPhaseResult(phase, ex, examKey, 'Exame integrado', true);
+        checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, ok: true }) || checkpoint;
       } catch (e) {
-        ex.comparativo = `Erro integração (${String(e?.message || 'falha')})`;
-        integrationComparativoByKey[examKey] = ex.comparativo;
-        persistIntegrationComparativoByKey();
-        pushMonitorError('exames', examKey, ex.comparativo);
-        fail += 1;
-        integrateStatus.fail += 1;
+        const msg = String(e?.message || 'falha');
+        const looksLikeDuplicate = normalizeHeaderKey(msg).includes('chave duplicada') || msg.includes('"code":"0007"') || msg.includes('"code":"00007"');
+        if (looksLikeDuplicate) {
+          const exists = await tryGetRmRecord(
+            insertUrl,
+            [`1;00007;${func.codPessoa};${idConsulta};${codExame}`, `00007;${func.codPessoa};${idConsulta};${codExame}`, `1;${func.codPessoa};${idConsulta};${codExame}`, `${func.codPessoa};${idConsulta};${codExame}`, `${idConsulta};${codExame}`],
+            { CODCOLIGADA: '1', CODPESSOA: String(func.codPessoa) },
+            currentIntegrateAbortController.signal
+          );
+          if (exists.found) {
+            applyIntegrationPhaseResult(phase, ex, examKey, 'Exame já existe no RM', true);
+            checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, ok: true }) || checkpoint;
+          } else {
+            applyIntegrationPhaseResult(phase, ex, examKey, `Erro integração (${compactHttpErrorMessage(msg)})`, false);
+            checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
+          }
+        } else {
+          applyIntegrationPhaseResult(phase, ex, examKey, `Erro integração (${compactHttpErrorMessage(msg)})`, false);
+          checkpoint = updateIntegrationCheckpointProgress(checkpoint, { key: examKey, fail: true }) || checkpoint;
+        }
       }
 
-      integrateStatus.done += 1;
-      if (integrateStatus.done % 10 === 0 || integrateStatus.done === integrateStatus.total) {
+      if (integrateStatus.done % batchSize === 0 || integrateStatus.done === integrateStatus.total) {
         rebuildAndRender(false);
         updateApiProgressUi();
       }
     }
 
+    preserveRenderedRowsOnce = true;
     rebuildAndRender(false);
     integrateStatus.running = false;
     currentIntegrateAbortController = null;
     stopApiProgressTimer();
     updateApiProgressUi();
 
-    monitorSummary.exames = { total: integrateStatus.total, ok, fail };
+    monitorSummary.exames = { total: integrateStatus.total, ok: Number(checkpoint.ok || 0), fail: Number(checkpoint.fail || 0) };
     persistMonitor();
     renderMonitorPanel();
-    finishHistoryRun(ok, fail, { canceled: integrateCancelRequested });
+    finishHistoryRun(Number(checkpoint.ok || 0), Number(checkpoint.fail || 0), { canceled: integrateCancelRequested });
 
+    if (!integrateCancelRequested) clearIntegrationCheckpoint();
     if (integrateCancelRequested) {
       showToast('Integração de exames cancelada', 'error');
       return;
     }
-    if (fail) {
-      showToast(`Exames integrados • ${ok} ok • ${fail} falha(s)`, 'error');
+    if (Number(checkpoint.fail || 0)) {
+      showToast(`Exames integrados • ${checkpoint.ok || 0} ok • ${checkpoint.fail || 0} falha(s)`, 'error');
       return;
     }
-    showToast(`Exames integrados • ${ok} ok`, 'success');
+    showToast(`Exames integrados • ${checkpoint.ok || 0} ok`, 'success');
   }
 
-  function integrar() {
+  async function integrar() {
     if (dados.length === 0) {
       showToast('Nenhum dado para integrar', 'error');
       return;
@@ -6665,13 +7956,38 @@
     }
 
     if (importMode === 'exames') {
-      const eligible = itens.some(r => {
-        const key = buildCoverKey(r);
-        const idConsulta = Number(idConsultaByKey[key] || r.idConsulta || 0);
-        return Number.isFinite(idConsulta) && idConsulta > 0;
-      });
-      if (!eligible) {
-        showToast('Nenhum exame com capa integrada (sem IDCONSULTA)', 'error');
+      try {
+        const coverByKey = new Map((Array.isArray(coverRows) ? coverRows : []).map(c => [buildCoverKey(c), c]));
+        const coversNeededMap = new Map();
+        itens.forEach(ex => {
+          const coverKey = buildCoverKey(ex);
+          if (!coverKey) return;
+          if (coversNeededMap.has(coverKey)) return;
+          coversNeededMap.set(
+            coverKey,
+            coverByKey.get(coverKey) || {
+              nomeFuncionario: ex.nomeFuncionario,
+              cpf: ex.cpf,
+              matricula: ex.matricula,
+              situacao: ex.situacao || '',
+              matriculaApi: ex.matriculaApi || '',
+              dataFicha: ex.dataFicha,
+              tipoExame: ex.tipoExame || '',
+              nomeExaminador: ex.nomeExaminador || '',
+              parecerAso: ex.parecerAso || '',
+              qtdeExames: 0,
+              comparativo: '',
+              idConsulta: ex.idConsulta || ''
+            }
+          );
+        });
+        const controller = new AbortController();
+        await ensureIdConsultaForEmptyCovers(Array.from(coversNeededMap.values()), controller.signal);
+        preserveRenderedRowsOnce = true;
+        rebuildAndRender(false);
+        updateIntegrateButton();
+      } catch (e) {
+        showToast(`Falha ao reservar IdASO/IDCONSULTA: ${compactHttpErrorMessage(e?.message || e)}`, 'error');
         return;
       }
     }
@@ -6701,7 +8017,8 @@
       el.innerText = '';
       return;
     }
-    const base = `${shown} exibido(s) • ${total} total`;
+    const fileInfo = rawContext?.rawRows?.length ? ` • arquivo ${rawContext.rawRows.length} linha(s)` : '';
+    const base = `${shown} exibido(s) • ${total} total${fileInfo}`;
     if (consultStatus?.running && consultStatus.total) {
       el.innerText = `${base} • API ${consultStatus.done}/${consultStatus.total}`;
       updateApiProgressUi();
@@ -6718,18 +8035,22 @@
     const title = document.getElementById('apiProgressTitle');
     const sub = document.getElementById('apiProgressSub');
     const cancelBtn = document.getElementById('apiProgressCancel');
-    if (!wrap || !bar || !text || !title || !sub || !cancelBtn) return;
+    const pauseBtn = document.getElementById('apiProgressPause');
+    const pauseIcon = document.getElementById('apiProgressPauseIcon');
+    if (!wrap || !bar || !text || !title || !sub || !cancelBtn || !pauseBtn || !pauseIcon) return;
 
     const active =
       consultStatus?.running
-        ? { label: 'Comparação', ...consultStatus, canceling: consultCancelRequested }
+        ? { label: consultStatus?.label ? String(consultStatus.label) : 'Comparação', ...consultStatus, canceling: consultCancelRequested }
         : integrateStatus?.running
           ? { label: integrateStatus.phase === 'exames' ? 'Integração Exames' : 'Integração Capa', ...integrateStatus, canceling: integrateCancelRequested }
           : null;
 
     if (!active) {
       wrap.classList.add('hidden');
+      pauseBtn.classList.add('hidden');
       stopApiProgressTimer();
+      updateProcessActionButtons();
       renderImportTrackingPanels();
       return;
     }
@@ -6750,12 +8071,39 @@
     const elapsedSec = Math.floor(elapsedMs / 1000);
     const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
     const ss = String(elapsedSec % 60).padStart(2, '0');
-    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail} • tempo ${mm}:${ss}`;
+    const batchText = active.batchSize ? ` • lote ${active.batchSize}` : '';
+    const pausedText = active.paused ? ' • pausado' : '';
+    sub.innerText = `${done}/${total} • ok ${ok} • falhas ${fail}${batchText} • tempo ${mm}:${ss}${pausedText}`;
 
     cancelBtn.disabled = Boolean(active.canceling);
+    const canPause = Boolean(integrateStatus?.running);
+    pauseBtn.classList.toggle('hidden', !canPause);
+    pauseBtn.disabled = Boolean(active.canceling) || !canPause;
+    pauseBtn.title = integratePauseRequested ? 'Continuar processo' : 'Pausar processo';
+    pauseBtn.setAttribute('aria-label', integratePauseRequested ? 'Continuar processo' : 'Pausar processo');
+    pauseIcon.textContent = integratePauseRequested ? '▶' : '⏸';
     wrap.classList.toggle('api-progress--canceling', Boolean(active.canceling));
+    updateProcessActionButtons();
     renderMonitorPanel();
     renderImportTrackingPanels();
+  }
+
+  function updateProcessActionButtons() {
+    const capaRetryBtn = document.getElementById('impCapaRetryBtn');
+    const examesRetryBtn = document.getElementById('impExamesRetryBtn');
+    const capaVerifyBtn = document.getElementById('impCapaVerifyBtn');
+    const examesVerifyBtn = document.getElementById('impExamesVerifyBtn');
+    const capaRetryTopBtn = document.getElementById('retryCapaTopBtn');
+    const examesRetryTopBtn = document.getElementById('retryExamesTopBtn');
+    const busy = Boolean(consultStatus?.running || integrateStatus?.running);
+    const capaDisabled = busy || getFailedRowsForPhase('capa').length === 0;
+    const examesDisabled = busy || getFailedRowsForPhase('exames').length === 0;
+    if (capaRetryBtn) capaRetryBtn.disabled = capaDisabled;
+    if (examesRetryBtn) examesRetryBtn.disabled = examesDisabled;
+    if (capaRetryTopBtn) capaRetryTopBtn.disabled = capaDisabled;
+    if (examesRetryTopBtn) examesRetryTopBtn.disabled = examesDisabled;
+    if (capaVerifyBtn) capaVerifyBtn.disabled = busy || (Array.isArray(coverRows) ? coverRows.length === 0 : true);
+    if (examesVerifyBtn) examesVerifyBtn.disabled = busy || (Array.isArray(detailRows) ? detailRows.length === 0 : true);
   }
 
   function startApiProgressTimer() {
@@ -6803,13 +8151,48 @@
     topbarClockTimerId = setInterval(updateTopbarMeta, 1000);
   }
 
+  function renderSessionEnvInfo() {
+    const envEl = document.getElementById('sessionEnvInfo');
+    if (!envEl) return;
+    envEl.innerText = apiEnv === 'test' ? 'Base Teste' : 'Base Produção';
+  }
+
+  async function runPendingAuthValidationOnLoad() {
+    const pending = sessionStorage.getItem('pendingAuthValidation') === '1';
+    if (!pending) return;
+    sessionStorage.removeItem('pendingAuthValidation');
+    sessionStorage.removeItem('pendingAuthValidationAt');
+    const authHeaders = getAuthHeaders();
+    if (authHeaders === null) return;
+    const url = buildApiUrl('00000000000');
+    if (!url) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+      const res = await fetchWithProxyFallback(url, { method: 'GET', headers: { Accept: 'application/json', ...authHeaders }, signal: controller.signal });
+      if (Number(res?.status || 0) === 401 || Number(res?.status || 0) === 403) {
+        showToast('Usuário ou senha inválidos', 'error');
+        setTimeout(() => logout(), 500);
+      }
+    } catch {
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   applyModuleState();
   loadApiBaseUrlToUI();
   loadApiProxyBaseUrlToUI();
   loadApiAuthToUI();
+  renderSessionEnvInfo();
+  updateFileInputIndicator();
+  void runPendingAuthValidationOnLoad();
   renderTable(columnsByMode[importMode], []);
   updateIntegrateButton();
+  updateProcessActionButtons();
   showPage(currentPage);
+  window.addEventListener('beforeunload', onBeforeUnloadGuard);
+  window.addEventListener('keydown', onReloadShortcutGuard, true);
   void restoreLastContext();
   startTopbarClock();
 </script>

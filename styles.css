@@ -39,16 +39,17 @@ body { -ms-overflow-style: none; scrollbar-width: none; }
 .table-wrap { -ms-overflow-style: none; scrollbar-width: none; }
 
 body.login {
-  height: 100vh;
+  min-height: 100vh;
   background-color: var(--bg);
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 24px 16px 92px;
 }
 
 .container {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
 }
 
 .login-box {
@@ -100,6 +101,62 @@ body.login {
   outline: none;
   border-color: rgba(108, 140, 255, 0.75);
   box-shadow: 0 0 0 4px rgba(108, 140, 255, 0.18);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.toggle__track {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(18, 22, 32, 0.85);
+  border: 1px solid rgba(108, 140, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.toggle__thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(108, 140, 255, 0.95), rgba(180, 124, 255, 0.95));
+  box-shadow: 0 10px 18px -12px rgba(108, 140, 255, 0.75);
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.toggle input:checked + .toggle__track {
+  background: rgba(108, 140, 255, 0.12);
+  border-color: rgba(108, 140, 255, 0.55);
+}
+
+.toggle input:checked + .toggle__track .toggle__thumb {
+  transform: translateX(20px);
+}
+
+.toggle--small .toggle__track {
+  width: 42px;
+  height: 24px;
+}
+
+.toggle--small .toggle__thumb {
+  width: 20px;
+  height: 20px;
 }
 
 .login-box button {
@@ -196,6 +253,24 @@ body.dashboard {
 .nav { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
 .nav-item--logout { margin-top: auto; }
+
+.nav-session {
+  padding: 0 10px 10px 10px;
+}
+
+.nav-session .meta {
+  font-size: 12px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.nav-footer-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(108, 140, 255, 0.12);
+  color: rgba(227, 232, 238, 0.72);
+}
 
 .nav-module {
   border-radius: 12px;
@@ -302,6 +377,87 @@ body.dashboard {
   backdrop-filter: blur(10px);
 }
 
+@media (max-width: 720px) {
+  body.login {
+    align-items: center;
+    padding: 20px 16px 88px;
+  }
+
+  .container {
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .login-box {
+    width: min(100%, 420px);
+    padding: 28px 22px 24px;
+    border-radius: 16px;
+  }
+
+  .login-box h2 {
+    font-size: 28px;
+  }
+
+  .login-box p {
+    margin-bottom: 22px;
+    font-size: 15px;
+  }
+
+  .input-group {
+    margin-bottom: 16px;
+  }
+
+  .input-group input {
+    min-height: 48px;
+    padding: 12px 12px;
+    border-radius: 10px;
+  }
+
+  .toggle {
+    flex-wrap: wrap;
+  }
+
+  .login-box button {
+    margin-top: 4px;
+    padding: 14px 12px;
+    border-radius: 10px;
+  }
+
+  .app-footer--fixed {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 420px) {
+  body.login {
+    padding: 16px 12px 82px;
+  }
+
+  .container {
+    justify-content: center;
+  }
+
+  .login-box {
+    width: 100%;
+    padding: 24px 18px 20px;
+  }
+
+  .login-box h2 {
+    font-size: 26px;
+  }
+
+  .login-box button {
+    padding: 14px 12px;
+    font-size: 15px;
+  }
+
+  #apiBaseUrlTestInput {
+    font-size: 13px;
+  }
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -316,7 +472,7 @@ body.dashboard {
 .topbar__left { display: flex; align-items: center; gap: 10px; }
 .topbar__title { font-weight: 700; }
 
-.topbar__actions { display: flex; align-items: center; gap: 10px; }
+.topbar__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .topbar__meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 220px; }
 .topbar__greeting { font-weight: 900; font-size: 13px; color: var(--text); line-height: 1.1; }
 .topbar__clock { line-height: 1.1; }
@@ -342,6 +498,13 @@ body.dashboard {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.process-card__actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .api-progress__sub {
@@ -862,6 +1025,10 @@ body.dashboard {
 
 .icon-button:hover { background: rgba(108, 140, 255, 0.08); }
 
+.icon-button--process {
+  font-size: 16px;
+}
+
 .icon-button--hamburger { display: none; }
 
 .icon-button--refresh svg {
@@ -1126,6 +1293,20 @@ body.dashboard {
 
   .monitor-grid--import {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  #importTrackingPanels {
+    grid-template-columns: 1fr;
+  }
+  #importTrackingPanels .monitor-card[data-phase] {
+    display: none;
+  }
+  #importTrackingPanels[data-mobile-phase="comparacao"] .monitor-card[data-phase="comparacao"],
+  #importTrackingPanels[data-mobile-phase="capa"] .monitor-card[data-phase="capa"],
+  #importTrackingPanels[data-mobile-phase="exames"] .monitor-card[data-phase="exames"] {
+    display: block;
   }
 }
 
@@ -1469,7 +1650,27 @@ body.dashboard {
 }
 
 .file-button:hover { background: rgba(108, 140, 255, 0.1); border-color: rgba(108, 140, 255, 0.6); }
+.file-button--loaded {
+  border-style: solid;
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.10);
+  color: #d1fae5;
+}
+.file-button--loaded:hover {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(52, 211, 153, 0.62);
+}
 .file-button input { display: none; }
+
+.button--icon-mobile .button__icon {
+  display: none;
+}
+
+.button--icon-mobile .button__icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
 
 .table-wrap {
   width: 100%;
@@ -2310,6 +2511,95 @@ body.dashboard {
 @media (max-width: 900px) {
   .icon-button--hamburger { display: inline-flex; }
   .api-progress__actions { width: 100%; justify-content: space-between; }
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .topbar__left,
+  .topbar__actions {
+    width: 100%;
+  }
+  .topbar__actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    justify-content: flex-start;
+    align-items: start;
+  }
+  .topbar__meta {
+    min-width: 0;
+    align-items: flex-start;
+    width: 100%;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .topbar__actions .button {
+    min-width: 180px;
+  }
+  #refreshBtn {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  #compareBtn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  #integrarBtn {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .import-bar,
+  .import-bar--top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .import-bar__left,
+  .import-bar__right {
+    width: 100%;
+  }
+  .import-bar__right {
+    justify-content: flex-start;
+  }
+  .import-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .import-actions .button {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .input--search {
+    min-width: 0;
+    width: 100%;
+  }
+  .segmented {
+    width: 100%;
+  }
+  .segmented__btn {
+    flex: 1 1 0;
+  }
+  .file-button,
+  .import-bar__right .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .import-actions .button {
+    width: auto;
+  }
+  .button--icon-mobile {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .button--icon-mobile .button__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .button--icon-mobile .button__text {
+    display: none;
+  }
 
   .sidebar {
     position: fixed;
@@ -2326,4 +2616,36 @@ body.dashboard {
   .overlay.overlay--open { display: block; z-index: 20; }
   .dashboard-layout { display: block; }
   .main { padding: 12px; }
+}
+
+@media (max-width: 640px) {
+  .topbar__actions {
+    grid-template-columns: 1fr auto;
+  }
+  .topbar__actions .button {
+    width: 100%;
+    min-width: 0;
+  }
+  .topbar__actions .icon-button {
+    width: 40px;
+    min-width: 40px;
+  }
+  .import-actions {
+    width: 100%;
+  }
+  .import-actions .button {
+    flex: 1 1 0;
+  }
+  .api-progress__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .api-progress__actions {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .api-progress__actions .button,
+  .api-progress__actions .icon-button {
+    width: 100%;
+  }
 }

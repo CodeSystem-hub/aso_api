@@ -23,6 +23,21 @@
         <input type="password" id="senha" required>
       </div>
 
+      <div class="input-group">
+        <label>Ambiente</label>
+        <label class="toggle">
+          <input type="checkbox" id="envToggle">
+          <span class="toggle__track"><span class="toggle__thumb"></span></span>
+          <span id="envLabel" class="meta">Produção</span>
+        </label>
+      </div>
+
+      <div class="input-group hidden" id="testApiBaseUrlGroup">
+        <label>RM Base Teste (URL)</label>
+        <input type="text" id="apiBaseUrlTestInput" placeholder="https://...:2051/...">
+        <div class="meta">Opcional. Se vazio, usa o padrão automático.</div>
+      </div>
+
       <button type="submit">Entrar</button>
     </form>
   </div>
